@@ -16,6 +16,7 @@ import MapView from './components/MapView'
 import TimeControl from './components/TimeControl'
 import AreaPanel from './components/AreaPanel'
 import RiskList from './components/RiskList'
+import ShelterList from './components/ShelterList'
 import ChatPanel from './components/ChatPanel'
 import HelpPanel from './components/HelpPanel'
 
@@ -113,6 +114,7 @@ export default function App() {
         </section>
 
         <AreaPanel place={focusPlace} isUser={selected === null} hoursAhead={hoursAhead} dataMode={dataMode} onReset={() => setSelected(null)} />
+        <ShelterList resources={resources} onPick={setSelected} />
         <RiskList areas={areas} hoursAhead={hoursAhead} onPick={(row) => setSelected({ name: row.town, lat: row.lat, lon: row.lon })} />
         <ChatPanel userLocation={userLocation} hoursAhead={hoursAhead} dataMode={dataMode} onHelpDraft={setHelpDraft} />
         <HelpPanel user={user} userLocation={userLocation} draft={helpDraft} onDraftUsed={() => setHelpDraft(null)} />
