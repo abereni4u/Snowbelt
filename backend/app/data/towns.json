@@ -108,6 +108,150 @@
     "listed": true
   },
   {
+    "name": "Lockport",
+    "lat": 43.169,
+    "lon": -78.697,
+    "listed": true
+  },
+  {
+    "name": "North Tonawanda",
+    "lat": 43.041,
+    "lon": -78.866,
+    "listed": true
+  },
+  {
+    "name": "Lewiston",
+    "lat": 43.173,
+    "lon": -79.036,
+    "listed": true
+  },
+  {
+    "name": "Albion",
+    "lat": 43.246,
+    "lon": -78.194,
+    "listed": true
+  },
+  {
+    "name": "Medina",
+    "lat": 43.22,
+    "lon": -78.387,
+    "listed": true
+  },
+  {
+    "name": "Batavia",
+    "lat": 42.998,
+    "lon": -78.188,
+    "listed": true
+  },
+  {
+    "name": "Le Roy",
+    "lat": 42.978,
+    "lon": -77.988,
+    "listed": true
+  },
+  {
+    "name": "Warsaw",
+    "lat": 42.74,
+    "lon": -78.133,
+    "listed": true
+  },
+  {
+    "name": "Perry",
+    "lat": 42.716,
+    "lon": -78.006,
+    "listed": true
+  },
+  {
+    "name": "Arcade",
+    "lat": 42.534,
+    "lon": -78.423,
+    "listed": true
+  },
+  {
+    "name": "Springville",
+    "lat": 42.509,
+    "lon": -78.667,
+    "listed": true
+  },
+  {
+    "name": "Alden",
+    "lat": 42.9,
+    "lon": -78.492,
+    "listed": true
+  },
+  {
+    "name": "Jamestown",
+    "lat": 42.097,
+    "lon": -79.238,
+    "listed": true
+  },
+  {
+    "name": "Dunkirk",
+    "lat": 42.483,
+    "lon": -79.335,
+    "listed": true
+  },
+  {
+    "name": "Fredonia",
+    "lat": 42.44,
+    "lon": -79.331,
+    "listed": true
+  },
+  {
+    "name": "Westfield",
+    "lat": 42.322,
+    "lon": -79.578,
+    "listed": true
+  },
+  {
+    "name": "Olean",
+    "lat": 42.078,
+    "lon": -78.43,
+    "listed": true
+  },
+  {
+    "name": "Salamanca",
+    "lat": 42.158,
+    "lon": -78.715,
+    "listed": true
+  },
+  {
+    "name": "Ellicottville",
+    "lat": 42.275,
+    "lon": -78.673,
+    "listed": true
+  },
+  {
+    "name": "Gowanda",
+    "lat": 42.463,
+    "lon": -78.935,
+    "listed": true
+  },
+  {
+    "name": "Wellsville",
+    "lat": 42.122,
+    "lon": -77.948,
+    "listed": true
+  },
+  {
+    "name": "Alfred",
+    "lat": 42.254,
+    "lon": -77.791,
+    "listed": true
+  },
+  {
+    "name": "Cuba",
+    "lat": 42.218,
+    "lon": -78.275,
+    "listed": true
+  },
+  {
+    "name": "Belmont",
+    "lat": 42.223,
+    "lon": -78.034,
+    "listed": true
+  },
+  {
     "name": "UB North Campus",
     "lat": 43.001,
     "lon": -78.789,
