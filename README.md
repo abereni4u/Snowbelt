@@ -1,6 +1,6 @@
 # Snowbelt
 
-Lake-effect snow can bury one Buffalo neighborhood while the next one stays clear. Snowbelt shows where the snow is piling up, tells you whether your drive crosses it, and connects you with neighbors and emergency contacts when you're stuck. A Gemini assistant does the heavy lifting: it looks up conditions, checks routes, finds shelters and drafts help requests from plain-language questions.
+Lake-effect snow can bury one Buffalo neighborhood while the next one stays clear. Snowbelt shows where the snow is piling up across Western New York, tells you whether your drive crosses it, and connects you with neighbors and emergency contacts when you're stuck. A Gemini assistant does the heavy lifting: it looks up conditions, checks routes, finds shelters and drafts help requests from plain-language questions.
 
 Built at UB Hacking 2026 for the Gemini track.
 
@@ -98,10 +98,10 @@ Example requests and responses for every endpoint are in `shared/contracts/`. If
 
 | Endpoint | Owner | What it returns |
 | --- | --- | --- |
-| `GET /api/risk?hours_ahead=0-24&mode=live\|replay` | 2 | GeoJSON grid of ~3 km cells with snow totals, rate and risk level |
+| `GET /api/risk?hours_ahead=0-24&mode=live\|replay` | 2 | Snow totals and rates on a ~3 km grid over Western New York, as number arrays (the map draws them as one smooth layer) |
 | `GET /api/conditions?lat&lon&hours_ahead&mode` | 2 | Conditions at one point |
 | `GET /api/areas?hours_ahead&mode` | 2 | Every town, worst first |
-| `GET /api/alerts` | 2 | Live NWS alerts for Buffalo |
+| `GET /api/alerts` | 2 | Live NWS alerts for all eight Western New York counties |
 | `POST /api/route` | 2 | Fastest and safer routes, each with a risk level |
 | `GET /api/resources?lat&lon&type` | 4 | Nearest warming centers, shelters, police and government sites |
 | `POST /api/help/notify` | 4 | Emails/texts the signed-in user's emergency contacts |

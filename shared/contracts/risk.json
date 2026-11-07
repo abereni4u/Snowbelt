@@ -1,82 +1,38 @@
 {
-  "_about": "GET /api/risk?hours_ahead=0-24&mode=live|replay. One square cell per ~3 km. Example trimmed to 2 of ~480 cells.",
+  "_about": "GET /api/risk?hours_ahead=0-24&mode=live|replay. Snowfall on a ~3 km grid over Western New York, as number arrays: snow_total_in[row][col] (storm total, inches) and rate_in_hr[row][col] (inches per hour) at cell centers. Row 0 is the south edge and col 0 the west edge; bounds are the grid's outer edges. Example cut to 2 x 3 cells around the snow band; the real grid is about 53 x 58.",
   "example": {
-    "type": "FeatureCollection",
-    "features": [
-      {
-        "type": "Feature",
-        "geometry": {
-          "type": "Polygon",
-          "coordinates": [
-            [
-              [
-                -78.96911585693337,
-                42.70810810810811
-              ],
-              [
-                -78.93235095214818,
-                42.70810810810811
-              ],
-              [
-                -78.93235095214818,
-                42.73513513513513
-              ],
-              [
-                -78.96911585693337,
-                42.73513513513513
-              ],
-              [
-                -78.96911585693337,
-                42.70810810810811
-              ]
-            ]
-          ]
-        },
-        "properties": {
-          "snow_total_in": 8.9,
-          "rate_in_hr": 1.55,
-          "next_6h_in": 6.5,
-          "level": "high",
-          "risk": 0.62
-        }
-      },
-      {
-        "type": "Feature",
-        "geometry": {
-          "type": "Polygon",
-          "coordinates": [
-            [
-              [
-                -79.3,
-                42.6
-              ],
-              [
-                -79.26323509521481,
-                42.6
-              ],
-              [
-                -79.26323509521481,
-                42.627027027027026
-              ],
-              [
-                -79.3,
-                42.627027027027026
-              ],
-              [
-                -79.3,
-                42.6
-              ]
-            ]
-          ]
-        },
-        "properties": {
-          "snow_total_in": 1.3,
-          "rate_in_hr": 0.2,
-          "next_6h_in": 0.8,
-          "level": "low",
-          "risk": 0.08
-        }
-      }
+    "bounds": {
+      "south": 42.7738,
+      "west": -78.8073,
+      "north": 42.8278,
+      "east": -78.6971
+    },
+    "rows": 2,
+    "cols": 3,
+    "cell_km": 3.0,
+    "snow_total_in": [
+      [
+        11.0,
+        11.4,
+        11.2
+      ],
+      [
+        8.4,
+        9.4,
+        10.0
+      ]
+    ],
+    "rate_in_hr": [
+      [
+        2.12,
+        2.1,
+        1.99
+      ],
+      [
+        1.79,
+        1.94,
+        1.99
+      ]
     ],
     "wind": {
       "from_deg": 250,

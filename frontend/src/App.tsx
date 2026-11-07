@@ -26,7 +26,7 @@ export default function App() {
   const [selected, setSelected] = useState<Place | null>(null)
   const [hoursAhead, setHoursAhead] = useState(0)
   const [dataMode, setDataMode] = useState<DataMode>('live')
-  const [grid, setGrid] = useState<{ data: RiskGrid; key: string } | null>(null)
+  const [grid, setGrid] = useState<RiskGrid | null>(null)
   const [areas, setAreas] = useState<AreaRow[]>([])
   const [resources, setResources] = useState<Resource[]>([])
   const [alerts, setAlerts] = useState<NwsAlert[]>([])
@@ -55,7 +55,7 @@ export default function App() {
     Promise.all([api.risk(hoursAhead, dataMode), api.areas(hoursAhead, dataMode)])
       .then(([gridData, areaData]) => {
         if (cancelled) return
-        setGrid({ data: gridData, key: `${dataMode}-${hoursAhead}` })
+        setGrid(gridData)
         setAreas(areaData)
         setError('')
       })
@@ -73,7 +73,7 @@ export default function App() {
         <div className="plaque">
           <div className="plaque-in">
             <span className="plaque-name">Snowbelt</span>
-            <span className="plaque-sub">Erie County, NY</span>
+            <span className="plaque-sub">Western New York</span>
           </div>
         </div>
         <div className="top-actions">
@@ -108,7 +108,7 @@ export default function App() {
             <h2>Storm total snowfall</h2>
             <p className="sub">Tap a town, pin or any spot to check it.</p>
           </div>
-          <MapView grid={grid?.data ?? null} gridKey={grid?.key ?? ''} resources={resources} userLocation={userLocation} selected={selected} onPick={setSelected} />
+          <MapView grid={grid} resources={resources} userLocation={userLocation} selected={selected} onPick={setSelected} />
           <TimeControl hoursAhead={hoursAhead} onHoursChange={setHoursAhead} dataMode={dataMode} onDataModeChange={setDataMode} />
         </section>
 

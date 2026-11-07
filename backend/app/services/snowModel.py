@@ -20,8 +20,9 @@ import math
 KM_PER_DEG_LAT = 111.0
 KM_PER_DEG_LON = 111.32 * math.cos(math.radians(42.86))
 
-# Map area covered by the risk grid (Erie County + Niagara River + east end of Lake Erie)
-BOUNDS = dict(minLat=42.60, maxLat=43.12, minLon=-79.30, maxLon=-78.45)
+# Map area covered by the snow grid: the eight Western New York counties (Niagara, Orleans,
+# Genesee, Wyoming, Erie, Chautauqua, Cattaraugus, Allegany) plus the east end of Lake Erie
+BOUNDS = dict(minLat=41.99, maxLat=43.40, minLon=-79.80, maxLon=-77.70)
 CELL_KM = 3.0
 
 # Keyframes: (hour from "now", peak in/hr, center lat, center lon, heading the band points toward)
@@ -156,3 +157,31 @@ def buildRiskGrid(mode: str, hour: float) -> dict:
                 properties=conditions,
             ))
     return dict(type="FeatureCollection", features=features)
+
+
+def buildSnowRaster(mode: str, hour: float) -> dict:
+    """The same CELL_KM grid as buildRiskGrid, as plain number arrays for the map (a few KB
+    instead of a polygon per cell).
+
+    snow_total_in[row][col] and rate_in_hr[row][col] are taken at cell centers. Row 0 is the
+    southern edge and col 0 the western edge; bounds are the outer edges of the grid.
+    """
+    latStep = CELL_KM / KM_PER_DEG_LAT
+    lonStep = CELL_KM / KM_PER_DEG_LON
+    rows = int((BOUNDS["maxLat"] - BOUNDS["minLat"]) / latStep) + 1
+    cols = int((BOUNDS["maxLon"] - BOUNDS["minLon"]) / lonStep) + 1
+    totals = list()
+    rates = list()
+    for row in range(0, rows):
+        centerLat = BOUNDS["minLat"] + (row + 0.5) * latStep
+        totalRow = list()
+        rateRow = list()
+        for col in range(0, cols):
+            centerLon = BOUNDS["minLon"] + (col + 0.5) * lonStep
+            totalRow.append(round(getTotalIn(mode, centerLat, centerLon, hour), 1))
+            rateRow.append(round(getRateInHr(mode, centerLat, centerLon, hour), 2))
+        totals.append(totalRow)
+        rates.append(rateRow)
+    bounds = dict(south=BOUNDS["minLat"], west=BOUNDS["minLon"],
+                  north=round(BOUNDS["minLat"] + rows * latStep, 4), east=round(BOUNDS["minLon"] + cols * lonStep, 4))
+    return dict(bounds=bounds, rows=rows, cols=cols, cell_km=CELL_KM, snow_total_in=totals, rate_in_hr=rates)

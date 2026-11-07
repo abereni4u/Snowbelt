@@ -52,16 +52,33 @@ def test_health():
     assert (getOk("/api/health")["ok"] is True)
 
 
+def assertGridShape(grid: dict, label: str):
+    for name in ["snow_total_in", "rate_in_hr"]:
+        assert (len(grid[name]) == grid["rows"]), "%s: %s should have %d rows" % (label, name, grid["rows"])
+        assert all((len(row) == grid["cols"]) for row in grid[name]), "%s: every %s row should have %d values" % (label, name, grid["cols"])
+    assert ((grid["bounds"]["south"] < grid["bounds"]["north"]) and (grid["bounds"]["west"] < grid["bounds"]["east"]))
+
+
 def test_risk():
     actual = getOk("/api/risk", hours_ahead=0, mode="live")
     expected = loadExample("risk.json")
     assertSameFields(actual, expected, "risk")
-    assertSameFields(actual["features"], expected["features"], "risk feature")
-    assertSameFields(actual["features"][0]["properties"], expected["features"][0]["properties"], "risk cell properties")
+    assertSameFields(actual["bounds"], expected["bounds"], "risk bounds")
+    assertGridShape(actual, "risk")
+    assertGridShape(expected, "risk contract example")
+
+
+def test_risk_covers_western_new_york():
+    bounds = getOk("/api/risk", hours_ahead=0, mode="live")["bounds"]
+    jamestown, lockport, wellsville = (42.097, -79.238), (43.169, -78.697), (42.122, -77.948)
+    for lat, lon in [jamestown, lockport, wellsville]:
+        assert ((bounds["south"] < lat < bounds["north"]) and (bounds["west"] < lon < bounds["east"]))
 
 
 def test_risk_replay():
-    assert (len(getOk("/api/risk", hours_ahead=6, mode="replay")["features"]) > 0)
+    grid = getOk("/api/risk", hours_ahead=6, mode="replay")
+    assertGridShape(grid, "risk replay")
+    assert (max(max(row) for row in grid["snow_total_in"]) > 1)
 
 
 def test_conditions():
