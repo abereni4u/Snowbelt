@@ -30,9 +30,9 @@ You need Python 3.11+ and Node 20+.
 
 ```bash
 cd backend
-python -m venv .venv
+python3 -m venv .venv              # Windows: py -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt   # app packages plus pytest
 cp .env.example .env               # fill in whatever keys you have
 uvicorn app.main:app --reload --reload-dir app   # watch only app/, or .venv changes restart it mid-request
 ```
@@ -52,14 +52,14 @@ Open http://localhost:5173. Vite forwards `/api` calls to the backend.
 
 ## Who owns what
 
-Each role owns its own files, so we rarely edit the same file at the same time. Pick owners at kickoff and put your GitHub name in the table.
+Each role owns its own files, so we rarely edit the same file at the same time. Pick owners at kickoff and put your GitHub name in the table. `AGENTS.md` repeats this file list for AI coding tools, so if ownership changes, update both.
 
 | Role | Owner | Owns | First goals |
 | --- | --- | --- | --- |
 | 1. Gemini assistant (track centerpiece) | | `backend/app/services/geminiAgent.py`, `backend/app/routers/chat.py`, `frontend/src/components/ChatPanel.tsx` | Get a key, confirm tool calls work, write 10 test questions and fix bad answers, add a "compare to past storms" tool |
-| 2. Weather data + routes | | `backend/app/services/snowModel.py`, `nws.py`, `routing.py`, `routers/weather.py`, `routers/routing.py` | ORS key and real routes, live NWS snowfall behind `USE_LIVE_NWS`, tune risk thresholds on the replay, deploy backend |
+| 2. Weather data + routes | | `backend/app/services/snowModel.py`, `nws.py`, `routing.py`, `places.py`, `data/towns.json`, `routers/weather.py`, `routers/routing.py` | ORS key and real routes, live NWS snowfall behind `USE_LIVE_NWS`, tune risk thresholds on the replay, deploy backend |
 | 3. Frontend + map | | `frontend/src/App.tsx`, `MapView.tsx`, `TimeControl.tsx`, `AreaPanel.tsx`, `RiskList.tsx`, `styles.css` | Prototype look, gauges, draw fastest/safer routes on the map, phone layout, deploy frontend |
-| 4. Community + accounts + alerts | | `frontend/src/firebase.ts`, `HelpPanel.tsx`, `firebase/firestore.rules`, `backend/app/services/notify.py`, `firebaseAuth.py`, `backend/app/data/resources.json` | Firebase project, email alerts, Twilio, replace sample pins with a verified shelter list |
+| 4. Community + accounts + alerts | | `frontend/src/firebase.ts`, `HelpPanel.tsx`, `firebase/firestore.rules`, `backend/app/services/notify.py`, `firebaseAuth.py`, `backend/app/routers/community.py`, `backend/app/data/resources.json` | Firebase project, email alerts, Twilio, replace sample pins with a verified shelter list |
 
 Everyone: Devpost write-up and demo. AJ cuts the demo video.
 
@@ -123,9 +123,12 @@ Gemini never sends an alert by itself. `draftHelpRequest` fills in the help form
 
 ## Working together
 
-- Make a branch per task (`role1/route-tool`, `role3/gauges`), open a pull request into `main`, and merge your own once it runs. Keep pull requests small.
-- `main` must always start. Pull before you start something new.
+- Make a branch per task (`role1/route-tool`, `role3/gauges`), open a pull request into `main`, and merge your own once it runs and CI is green. Keep pull requests small; aim to merge every hour or two.
+- `main` must always start. Pull before you start something new, including before each new AI session.
 - Don't commit keys. If one slips into a commit, tell the team and rotate it.
+- **AI agents:** `AGENTS.md` holds the rules every coding agent should follow (Claude Code reads it through `CLAUDE.md`, Gemini CLI through `GEMINI.md`; Cursor, Codex and Copilot read `AGENTS.md` directly). The main ones: stay in your role's files, ask before touching shared files, keep `shared/contracts/` in sync, never invent shelter data. Read your agent's diff before you merge, since you'll have to explain it to judges.
+- **CI** (`.github/workflows/ci.yml`) runs on every pull request: backend tests (`cd backend && pytest`, offline, no keys needed) and the frontend build (`cd frontend && npm run build`). Run both before pushing. The backend tests also fail when a response no longer matches its example in `shared/contracts/`.
+- Shared files (`main.py`, `settings.py`, `requirements*.txt`, `package.json`, `api.ts`, `types.ts`, `shared/contracts/`): say in the team chat before changing one. If two people add packages at once, keep both and regenerate `package-lock.json` with `npm install`.
 
 ## Data sources
 

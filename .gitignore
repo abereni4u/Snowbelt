@@ -23,3 +23,7 @@ dist/
 .idea/
 .vscode/
 *.tsbuildinfo
+
+# Tests / local tool settings
+.pytest_cache/
+.claude/settings.local.json
