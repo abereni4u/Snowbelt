@@ -34,7 +34,7 @@ python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env               # fill in whatever keys you have
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --reload-dir app   # watch only app/, or .venv changes restart it mid-request
 ```
 
 Check http://localhost:8000/api/health (shows which services are connected) and http://localhost:8000/docs (try every endpoint).
