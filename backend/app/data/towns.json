@@ -1,0 +1,122 @@
+[
+  {
+    "name": "Buffalo",
+    "lat": 42.886,
+    "lon": -78.878,
+    "listed": true
+  },
+  {
+    "name": "Lackawanna",
+    "lat": 42.825,
+    "lon": -78.823,
+    "listed": true
+  },
+  {
+    "name": "West Seneca",
+    "lat": 42.85,
+    "lon": -78.799,
+    "listed": true
+  },
+  {
+    "name": "Cheektowaga",
+    "lat": 42.903,
+    "lon": -78.755,
+    "listed": true
+  },
+  {
+    "name": "Lancaster",
+    "lat": 42.9,
+    "lon": -78.67,
+    "listed": true
+  },
+  {
+    "name": "Amherst",
+    "lat": 42.978,
+    "lon": -78.8,
+    "listed": true
+  },
+  {
+    "name": "Williamsville",
+    "lat": 42.964,
+    "lon": -78.738,
+    "listed": true
+  },
+  {
+    "name": "Tonawanda",
+    "lat": 43.02,
+    "lon": -78.88,
+    "listed": true
+  },
+  {
+    "name": "Grand Island",
+    "lat": 43.033,
+    "lon": -78.962,
+    "listed": true
+  },
+  {
+    "name": "Niagara Falls",
+    "lat": 43.094,
+    "lon": -79.05,
+    "listed": true
+  },
+  {
+    "name": "Orchard Park",
+    "lat": 42.767,
+    "lon": -78.744,
+    "listed": true
+  },
+  {
+    "name": "Hamburg",
+    "lat": 42.716,
+    "lon": -78.829,
+    "listed": true
+  },
+  {
+    "name": "East Aurora",
+    "lat": 42.768,
+    "lon": -78.613,
+    "listed": true
+  },
+  {
+    "name": "Elma",
+    "lat": 42.832,
+    "lon": -78.636,
+    "listed": true
+  },
+  {
+    "name": "Eden",
+    "lat": 42.652,
+    "lon": -78.897,
+    "listed": true
+  },
+  {
+    "name": "Angola",
+    "lat": 42.638,
+    "lon": -79.028,
+    "listed": true
+  },
+  {
+    "name": "Boston",
+    "lat": 42.629,
+    "lon": -78.737,
+    "listed": true
+  },
+  {
+    "name": "Clarence",
+    "lat": 42.977,
+    "lon": -78.592,
+    "listed": true
+  },
+  {
+    "name": "UB North Campus",
+    "lat": 43.001,
+    "lon": -78.789,
+    "listed": false
+  },
+  {
+    "name": "UB South Campus",
+    "lat": 42.953,
+    "lon": -78.819,
+    "listed": false
+  }
+]

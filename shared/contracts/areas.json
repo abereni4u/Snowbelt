@@ -1,0 +1,35 @@
+{
+  "_about": "GET /api/areas?hours_ahead=&mode= . Every listed town, worst first. Example trimmed to 3.",
+  "example": [
+    {
+      "town": "Orchard Park",
+      "lat": 42.767,
+      "lon": -78.744,
+      "snow_total_in": 11.1,
+      "rate_in_hr": 1.86,
+      "next_6h_in": 6.8,
+      "level": "high",
+      "risk": 0.74
+    },
+    {
+      "town": "Elma",
+      "lat": 42.832,
+      "lon": -78.636,
+      "snow_total_in": 8.9,
+      "rate_in_hr": 1.75,
+      "next_6h_in": 9.4,
+      "level": "high",
+      "risk": 0.7
+    },
+    {
+      "town": "Lackawanna",
+      "lat": 42.825,
+      "lon": -78.823,
+      "snow_total_in": 6.0,
+      "rate_in_hr": 1.36,
+      "next_6h_in": 12.6,
+      "level": "med",
+      "risk": 0.54
+    }
+  ]
+}

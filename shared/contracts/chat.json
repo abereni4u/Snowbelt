@@ -1,0 +1,47 @@
+{
+  "_about": "POST /api/chat. Response is illustrative; real replies come from Gemini. help_draft is {kind, note} when Gemini drafted a help request for the user to confirm.",
+  "example": {
+    "request": {
+      "messages": [
+        {
+          "role": "user",
+          "text": "Is it safe to drive from UB North to Orchard Park tonight?"
+        }
+      ],
+      "lat": 43.001,
+      "lon": -78.789,
+      "hours_ahead": 0,
+      "mode": "live"
+    },
+    "response": {
+      "reply": "Not right now. Orchard Park is at high risk with about 11 inches down and nearly 2 inches an hour falling. The drive is about 33 minutes and crosses high-risk snow south of the Thruway. If you can, wait until after midnight when rates drop. (Sample data.)",
+      "tool_calls": [
+        {
+          "name": "lookupPlace",
+          "args": {
+            "name": "Orchard Park"
+          }
+        },
+        {
+          "name": "getRouteRisk",
+          "args": {
+            "fromLat": 43.001,
+            "fromLon": -78.789,
+            "toLat": 42.767,
+            "toLon": -78.744,
+            "hoursAhead": 0
+          }
+        },
+        {
+          "name": "getConditions",
+          "args": {
+            "lat": 42.767,
+            "lon": -78.744,
+            "hoursAhead": 0
+          }
+        }
+      ],
+      "help_draft": null
+    }
+  }
+}

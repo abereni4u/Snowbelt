@@ -1,0 +1,11 @@
+{
+  "_about": "GET /api/alerts. Live NWS alerts for Buffalo; [] when none.",
+  "example": [
+    {
+      "event": "Lake Effect Snow Warning",
+      "headline": "Lake Effect Snow Warning issued by NWS Buffalo NY (example)",
+      "severity": "Severe",
+      "ends": "2026-11-08T19:00:00-05:00"
+    }
+  ]
+}

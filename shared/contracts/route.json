@@ -1,0 +1,57 @@
+{
+  "_about": "POST /api/route. Points are [lon, lat]. safer is null when no safer route was needed or found. Coordinates trimmed.",
+  "example": {
+    "request": {
+      "from": [
+        -78.789,
+        43.001
+      ],
+      "to": [
+        -78.744,
+        42.767
+      ],
+      "hours_ahead": 0,
+      "mode": "live"
+    },
+    "response": {
+      "fastest": {
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -78.789,
+              43.001
+            ],
+            [
+              -78.78675,
+              42.9893
+            ],
+            [
+              -78.78450000000001,
+              42.977599999999995
+            ]
+          ]
+        },
+        "minutes": 33,
+        "miles": 16.3,
+        "level": "high",
+        "worst_risk": 0.84,
+        "red_stretches": [
+          [
+            [
+              -78.75525,
+              42.825500000000005
+            ],
+            [
+              -78.753,
+              42.8138
+            ]
+          ]
+        ]
+      },
+      "safer": null,
+      "source": "mock",
+      "note": "Straight-line mock. Add ORS_API_KEY to backend/.env for real roads."
+    }
+  }
+}

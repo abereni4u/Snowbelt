@@ -1,0 +1,33 @@
+{
+  "_about": "POST /api/help/notify with header Authorization: Bearer <Firebase ID token>. status is sent | dry_run | failed.",
+  "example": {
+    "request": {
+      "kind": "stuck",
+      "note": "Car stuck on Abbott Rd",
+      "lat": 42.84,
+      "lon": -78.8,
+      "display_name": "AJ",
+      "contacts": [
+        {
+          "name": "Mom",
+          "email": "mom@example.com",
+          "phone": "+17165550100"
+        }
+      ]
+    },
+    "response": {
+      "results": [
+        {
+          "channel": "email",
+          "to": "mom@example.com",
+          "status": "dry_run"
+        },
+        {
+          "channel": "sms",
+          "to": "+17165550100",
+          "status": "dry_run"
+        }
+      ]
+    }
+  }
+}

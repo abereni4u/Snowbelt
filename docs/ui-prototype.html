@@ -1,0 +1,1177 @@
+<!doctype html>
+<!-- Clickable UI prototype from the whiteboard sketch. Open this file in a browser.
+     Sample data only. The AI box answers from the page data when opened outside claude.ai. -->
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>body{margin:0}[hidden]{display:none!important}</style></head><body>
+<title>Snowbelt Buffalo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800&family=Overpass+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: app shell under a highway guide-sign plaque; map + high-risk list on the left, area gauges + AI on the right; one column under 920px. */
+:root{
+  --bg:#edf1f4; --surface:#ffffff; --surface-2:#f4f7f9; --ink:#14212b; --muted:#53646f;
+  --line:#d6dee5; --line-strong:#b5c2cc; --shadow:rgba(20,33,43,.32);
+  --sign:#0a6a3e; --sign-ink:#ffffff;
+  --water:#c5d9e8; --water-edge:#98b9d2; --water-ink:#55809f; --land:#f8fafb; --land-alt:#e6ebee;
+  --road:#a7b4be; --label:#3b4c58; --halo:#f8fafb; --wind:#365d7b;
+  --risk-high:#c22b2b; --risk-mod:#e29b12; --risk-low:#64737d; --on-high:#ffffff; --on-mod:#2a1c00; --on-low:#ffffff;
+  --pin-shelter:#0d9488; --pin-gov:#1d4ed8;
+  --s1:#d3e5f6; --s2:#93bde7; --s3:#4b88d6; --s4:#6743b4; --s5:#a62b8e; --s6:#6b1150; --snow-alpha:.74;
+  --f-display:"Overpass","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Overpass","Helvetica Neue",Arial,sans-serif;
+  --f-data:"Overpass Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d141a; --surface:#141d25; --surface-2:#19242d; --ink:#e3eaef; --muted:#93a4b1;
+    --line:#233039; --line-strong:#35454f; --shadow:rgba(0,0,0,.6);
+    --sign:#13804c; --sign-ink:#ffffff;
+    --water:#0f2638; --water-edge:#1d4561; --water-ink:#5a8db2; --land:#1a252e; --land-alt:#131c23;
+    --road:#3c4d5a; --label:#b7c4cd; --halo:#1a252e; --wind:#9cc3e0;
+    --risk-high:#d23c3c; --risk-mod:#f0a81a; --risk-low:#5c6c78; --on-high:#ffffff; --on-mod:#1e1500; --on-low:#ffffff;
+    --pin-shelter:#2cc7b5; --pin-gov:#6d8dff;
+    --s1:#23415f; --s2:#2f6aa8; --s3:#4f8de6; --s4:#8b62dd; --s5:#d14fb0; --s6:#ff86d6; --snow-alpha:.8;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d141a; --surface:#141d25; --surface-2:#19242d; --ink:#e3eaef; --muted:#93a4b1;
+  --line:#233039; --line-strong:#35454f; --shadow:rgba(0,0,0,.6);
+  --sign:#13804c; --sign-ink:#ffffff;
+  --water:#0f2638; --water-edge:#1d4561; --water-ink:#5a8db2; --land:#1a252e; --land-alt:#131c23;
+  --road:#3c4d5a; --label:#b7c4cd; --halo:#1a252e; --wind:#9cc3e0;
+  --risk-high:#d23c3c; --risk-mod:#f0a81a; --risk-low:#5c6c78; --on-high:#ffffff; --on-mod:#1e1500; --on-low:#ffffff;
+  --pin-shelter:#2cc7b5; --pin-gov:#6d8dff;
+  --s1:#23415f; --s2:#2f6aa8; --s3:#4f8de6; --s4:#8b62dd; --s5:#d14fb0; --s6:#ff86d6; --snow-alpha:.8;
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg); color:var(--ink); font:400 15px/1.45 var(--f-body); -webkit-font-smoothing:antialiased}
+button,input{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--sign); outline-offset:2px}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+.app{max-width:1260px; margin:0 auto; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); padding-block:14px 32px; display:flex; flex-direction:column; gap:14px}
+
+/* ---- header: the guide-sign plaque ---- */
+.top{display:flex; align-items:center; justify-content:space-between; gap:12px}
+.plaque{background:var(--sign); color:var(--sign-ink); border-radius:10px; padding:3px; flex:none}
+.plaque-in{border:2px solid var(--sign-ink); border-radius:7px; padding:8px 14px 5px; display:flex; flex-direction:column; line-height:1}
+.plaque-name{font:800 22px/1 var(--f-display)}
+.plaque-sub{font:700 10px/1.2 var(--f-display); letter-spacing:.12em; text-transform:uppercase; margin-top:4px; opacity:.9}
+.top-actions{display:flex; align-items:center; gap:8px; min-width:0}
+.loc{position:relative; min-width:0}
+.loc-pill{display:flex; align-items:center; gap:8px; min-width:0; max-width:100%; background:var(--surface); border:1px solid var(--line-strong); border-radius:999px; padding:9px 12px 8px; cursor:pointer; font-size:13px; line-height:1}
+.loc-dot{width:9px; height:9px; border-radius:50%; background:var(--sign); box-shadow:0 0 0 3px color-mix(in srgb, var(--sign) 24%, transparent); flex:none}
+.loc-pill[data-off] .loc-dot{background:transparent; border:2px solid var(--muted); box-shadow:none}
+.loc-state{color:var(--muted); font-weight:600; white-space:nowrap}
+.loc-name{font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0}
+.caret{flex:none; color:var(--muted)}
+@media (max-width:540px){ .loc-state{display:none} .plaque-name{font-size:19px} }
+.icon-btn{width:40px; height:40px; flex:none; display:grid; place-items:center; border:1px solid var(--line-strong); border-radius:10px; background:var(--surface); cursor:pointer}
+.icon-btn.sm{width:36px; height:36px; border-radius:999px}
+.pop{position:absolute; right:0; top:calc(100% + 8px); z-index:20; width:min(280px, calc(100vw - 32px)); background:var(--surface); border:1px solid var(--line-strong); border-radius:12px; padding:6px; box-shadow:0 14px 34px -14px var(--shadow)}
+.pop-note{font-size:12px; color:var(--muted); margin:6px 10px 6px; line-height:1.35}
+.pop-item{display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 10px 8px; border-radius:8px; border:0; background:none; cursor:pointer; font-size:14px}
+.pop-item:hover{background:var(--surface-2)}
+.pop-item[aria-checked="true"]{font-weight:700}
+.pop-item[aria-checked="true"]::after{content:"✓"; margin-left:auto; color:var(--sign); font-weight:800}
+.pop-sep{height:1px; background:var(--line); margin:4px 6px}
+
+/* ---- notice ---- */
+.notice{margin:0; display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; font-size:13px; color:var(--muted)}
+.tag{font:800 10.5px/1 var(--f-display); letter-spacing:.1em; text-transform:uppercase; color:var(--on-mod); background:var(--risk-mod); padding:5px 7px 4px; border-radius:4px}
+.notice a{color:var(--ink); font-weight:600; text-underline-offset:2px}
+
+/* ---- grid + cards ---- */
+.grid{display:grid; gap:16px; grid-template-columns:minmax(0,1fr); grid-template-areas:"map" "area" "list" "ai"; align-items:start}
+.map-card{grid-area:map} .area-card{grid-area:area} .list-card{grid-area:list} .ai-card{grid-area:ai}
+@media (min-width:920px){
+  .grid{grid-template-columns:minmax(0,1.62fr) minmax(300px,1fr); grid-template-areas:"map area" "map ai" "list ai"}
+  .ai-card{align-self:stretch}
+}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:14px; min-width:0}
+h2{font:800 17px/1.2 var(--f-display); margin:0; text-wrap:balance}
+.eyebrow{font:700 11px/1.2 var(--f-display); letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+.sub{margin:3px 0 0; font-size:12.5px; color:var(--muted)}
+
+/* ---- map card ---- */
+.map-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px 12px; padding:14px 16px 12px; flex-wrap:wrap}
+.readout{display:flex; align-items:center; gap:8px; font:600 13px/1 var(--f-data); font-variant-numeric:tabular-nums}
+.mode-tag{font:800 11px/1 var(--f-display); letter-spacing:.08em; text-transform:uppercase; padding:5px 8px 4px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line-strong)}
+.mode-tag.live{background:var(--sign); color:var(--sign-ink); border-color:transparent}
+.map-wrap{position:relative; border-block:1px solid var(--line); background:var(--water); overflow:hidden}
+#map{display:block; width:100%; height:auto; touch-action:manipulation; cursor:crosshair; user-select:none; -webkit-user-select:none}
+.map-foot{padding:12px 16px 14px; display:flex; flex-direction:column; gap:14px}
+.controls{display:flex; flex-wrap:wrap; align-items:center; gap:12px 16px}
+.seg{display:inline-flex; padding:3px; border:1px solid var(--line-strong); border-radius:999px; background:var(--surface-2); flex:none}
+.seg button{border:0; background:none; padding:8px 16px 7px; border-radius:999px; font:700 13px/1 var(--f-display); cursor:pointer; display:flex; align-items:center; gap:7px; color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--sign); color:var(--sign-ink)}
+.live-dot{width:7px; height:7px; border-radius:50%; background:currentColor}
+.seg button[aria-pressed="true"] .live-dot{animation:blink 1.6s ease-in-out infinite}
+.future{display:flex; align-items:center; gap:10px; flex:1 1 260px; min-width:0}
+.slider{flex:1; min-width:0}
+.slider input{width:100%; accent-color:var(--sign); margin:0; display:block}
+.ticks{display:flex; justify-content:space-between; font:500 11px/1 var(--f-data); color:var(--muted); margin-top:5px}
+.legend{display:flex; flex-wrap:wrap; gap:12px 28px; align-items:flex-end; justify-content:space-between}
+.ramp-wrap{display:flex; flex-direction:column; gap:6px}
+.ramp{display:flex; gap:2px}
+.ramp div{display:flex; flex-direction:column; gap:4px; width:34px}
+.ramp i{display:block; height:10px; border-radius:2px}
+.ramp span{font:500 11px/1 var(--f-data); color:var(--muted)}
+.r1{background:var(--s1)} .r2{background:var(--s2)} .r3{background:var(--s3)} .r4{background:var(--s4)} .r5{background:var(--s5)} .r6{background:var(--s6)}
+.keys{list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13px}
+.keys li{display:flex; align-items:center; gap:8px}
+.k{width:12px; height:12px; flex:none}
+.k-shelter{border-radius:50%; background:var(--pin-shelter)}
+.k-gov{background:var(--pin-gov); border-radius:2px; transform:rotate(45deg) scale(.82)}
+.k-you{border-radius:50%; background:var(--ink); border:2.5px solid var(--surface); box-shadow:0 0 0 1px var(--line-strong)}
+.fine{margin:0; font-size:12px; color:var(--muted)}
+
+/* map SVG */
+#map text{font-family:var(--f-display)}
+#map .land{fill:var(--land)}
+#map .ontario{fill:var(--land-alt)}
+#map .lake{fill:var(--water); stroke:var(--water-edge); stroke-width:1; vector-effect:non-scaling-stroke}
+#map .river{fill:none; stroke:var(--water); stroke-linecap:round; stroke-linejoin:round}
+#map .snow{opacity:var(--snow-alpha); pointer-events:none}
+#map .b0{fill:none} #map .b1{fill:var(--s1)} #map .b2{fill:var(--s2)} #map .b3{fill:var(--s3)} #map .b4{fill:var(--s4)} #map .b5{fill:var(--s5)} #map .b6{fill:var(--s6)}
+#map .roads,#map .wind,#map .labels{pointer-events:none}
+#map .road{fill:none; stroke:var(--road); stroke-width:1.8; vector-effect:non-scaling-stroke; stroke-linecap:round; stroke-linejoin:round; opacity:.9}
+#map .road.major{stroke-width:2.6}
+#map .shield rect{fill:var(--surface); stroke:var(--road); stroke-width:1.2; vector-effect:non-scaling-stroke}
+#map .shield text{font-family:var(--f-data); font-weight:600; font-size:calc(9.5px * var(--u)); fill:var(--label)}
+#map .water-label{font-size:calc(11px * var(--u)); font-weight:700; letter-spacing:.24em; fill:var(--water-ink)}
+#map .land-label{font-size:calc(10.5px * var(--u)); font-weight:700; letter-spacing:.24em; fill:var(--muted)}
+#map .town{cursor:pointer}
+#map .town-dot{fill:var(--label)}
+#map .town-label{font-size:calc(11.5px * var(--u)); font-weight:600; fill:var(--label); paint-order:stroke; stroke:var(--halo); stroke-width:calc(3.2px * var(--u)); stroke-linejoin:round}
+#map .town.sel .town-label{fill:var(--ink); font-weight:800}
+#map .hit{fill:transparent}
+#map .pin{cursor:pointer}
+#map .pin .mark{stroke:var(--surface); stroke-width:1.6; vector-effect:non-scaling-stroke}
+#map .pin.shelter .mark{fill:var(--pin-shelter)}
+#map .pin.gov .mark{fill:var(--pin-gov)}
+#map .pin.open .mark{stroke:var(--ink); stroke-width:2.6}
+#map .wind-line{stroke:var(--wind); stroke-width:2.2; vector-effect:non-scaling-stroke; stroke-linecap:round}
+#map .wind-head{fill:var(--wind)}
+#map .wind-label{font-size:calc(11px * var(--u)); font-weight:700; fill:var(--wind); paint-order:stroke; stroke:var(--water); stroke-width:calc(3px * var(--u)); stroke-linejoin:round}
+#map .sel-mark circle,#map .sel-mark path{fill:none; stroke:var(--ink); stroke-width:2; vector-effect:non-scaling-stroke}
+#map .you-dot{fill:var(--ink); stroke:var(--surface); stroke-width:2.6; vector-effect:non-scaling-stroke}
+#map .you-pulse{fill:var(--ink); opacity:.3; transform-box:fill-box; transform-origin:center; animation:pulse 2.2s ease-out infinite}
+
+/* pin popup */
+.popup{position:absolute; left:12px; right:12px; bottom:12px; max-width:340px; padding:12px 14px 14px; box-shadow:0 14px 36px -14px var(--shadow); display:flex; flex-direction:column; gap:6px; z-index:5}
+.popup-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
+.kind{font:800 11px/1 var(--f-display); letter-spacing:.08em; text-transform:uppercase; display:inline-flex; align-items:center; gap:7px; color:var(--muted)}
+.popup-name{font:800 16px/1.25 var(--f-display); margin:2px 0 0}
+.popup p{margin:0; font-size:13px; color:var(--muted)}
+.popup-row{display:flex; align-items:center; justify-content:space-between; gap:10px; font:500 12.5px/1.3 var(--f-data)}
+.x{width:30px; height:30px; flex:none; border:0; background:var(--surface-2); border-radius:8px; cursor:pointer; display:grid; place-items:center}
+.btn-line{align-self:flex-start; border:1px solid var(--line-strong); background:var(--surface); border-radius:999px; padding:7px 12px 6px; font:700 13px/1 var(--f-display); cursor:pointer; margin-top:4px}
+
+/* ---- area card + gauges ---- */
+.area-card{padding:16px; display:flex; flex-direction:column; gap:14px}
+.area-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px}
+.area-name{font:800 22px/1.15 var(--f-display); margin:4px 0 0}
+.area-note{margin:0; font-size:13.5px; color:var(--muted)}
+.linkish{border:0; background:none; padding:0; color:var(--ink); font-weight:700; font-size:13px; text-decoration:underline; text-underline-offset:2px; cursor:pointer; align-self:flex-start}
+.gauges{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px}
+.gauge{margin:0; background:var(--surface-2); border-radius:12px; padding:12px 10px 12px; display:flex; flex-direction:column; align-items:center; gap:4px}
+.g-title{font:700 12.5px/1.25 var(--f-display); text-align:center; text-wrap:balance}
+.g-svg{width:100%; max-width:200px; height:auto; display:block}
+.g-track{fill:none; stroke:var(--line); stroke-width:14}
+.g-val{fill:none; stroke-width:14; stroke-dasharray:0 100; transition:stroke-dasharray .45s ease, stroke .3s}
+.playing .g-val{transition:none}
+.g-num{font-family:var(--f-data); font-weight:600; font-size:30px; fill:var(--ink)}
+.g-unit{font-family:var(--f-display); font-weight:700; font-size:10.5px; letter-spacing:.1em; fill:var(--muted)}
+.g-tick{font-family:var(--f-data); font-weight:500; font-size:10.5px; fill:var(--muted)}
+.next{display:flex; justify-content:space-between; align-items:baseline; gap:12px; font-size:13.5px; padding-top:12px; border-top:1px solid var(--line)}
+.next b{font:600 14px var(--f-data); font-variant-numeric:tabular-nums}
+
+.chip{display:inline-flex; align-items:center; font:800 11px/1 var(--f-display); letter-spacing:.06em; text-transform:uppercase; padding:5px 8px 4px; border-radius:6px; white-space:nowrap; flex:none}
+.chip.high{background:var(--risk-high); color:var(--on-high)}
+.chip.mod{background:var(--risk-mod); color:var(--on-mod)}
+.chip.low{background:var(--risk-low); color:var(--on-low)}
+
+/* ---- high-risk list ---- */
+.list-card{padding:16px 0 4px}
+.list-head{display:flex; justify-content:space-between; align-items:baseline; gap:6px 12px; padding:0 16px 4px; flex-wrap:wrap}
+.list-when{font:600 13px/1.2 var(--f-data); color:var(--muted)}
+.counts{font-size:13px; color:var(--muted); padding:0 16px 10px; margin:0}
+.rows{list-style:none; margin:0; padding:0}
+.row{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 12px; width:100%; text-align:left; background:none; border:0; border-top:1px solid var(--line); padding:10px 16px 9px; cursor:pointer; align-items:center}
+.row:hover{background:var(--surface-2)}
+.row[aria-current="true"]{background:color-mix(in srgb, var(--sign) 10%, var(--surface))}
+.row-name{font:700 15px/1.25 var(--f-display)}
+.row-meta{grid-column:1; font:500 12.5px/1.3 var(--f-data); color:var(--muted); font-variant-numeric:tabular-nums}
+.row .chip{grid-column:2; grid-row:1 / span 2}
+.more{display:block; width:100%; text-align:left; border:0; border-top:1px solid var(--line); background:none; padding:11px 16px 9px; font:700 13px/1 var(--f-display); color:var(--ink); text-decoration:underline; text-underline-offset:2px; cursor:pointer}
+.empty{padding:14px 16px; color:var(--muted); border-top:1px solid var(--line); margin:0}
+
+/* ---- AI card ---- */
+.ai-card{display:flex; flex-direction:column; padding:16px; gap:12px; min-height:360px}
+.ai-head{display:flex; justify-content:space-between; align-items:center; gap:10px}
+.status{display:inline-flex; align-items:center; gap:6px; font:600 12px/1 var(--f-display); color:var(--muted)}
+.status-dot{width:8px; height:8px; border-radius:50%; background:var(--risk-low)}
+.status.on .status-dot{background:var(--sign)}
+.msgs{flex:1 1 0; min-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:2px}
+@media (max-width:919px){ .msgs{flex:none; max-height:380px} .ai-card{min-height:0} }
+.msg{max-width:90%; padding:9px 12px 8px; border-radius:12px; white-space:pre-wrap; font-size:14px; line-height:1.45}
+.msg.user{align-self:flex-end; background:var(--sign); color:var(--sign-ink); border-bottom-right-radius:4px}
+.msg.bot{align-self:flex-start; background:var(--surface-2); border:1px solid var(--line); border-bottom-left-radius:4px}
+.msg.bot.pending{color:var(--muted)}
+.msg.note{align-self:flex-start; font-size:12.5px; color:var(--muted); padding:0 4px}
+.suggest{display:flex; flex-wrap:wrap; gap:8px}
+.suggest button{border:1px solid var(--line-strong); background:var(--surface); border-radius:999px; padding:7px 12px 6px; font-size:13px; font-weight:600; cursor:pointer; text-align:left; line-height:1.25}
+.suggest button:disabled{opacity:.5; cursor:default}
+.ask{display:flex; gap:8px}
+.ask input{flex:1; min-width:0; font-size:15px; padding:10px 12px 9px; border:1px solid var(--line-strong); border-radius:10px; background:var(--surface-2); color:var(--ink)}
+.ask button{border:0; background:var(--sign); color:var(--sign-ink); font:700 14px/1 var(--f-display); padding:0 18px; border-radius:10px; cursor:pointer; min-width:68px}
+.ask button.stop{background:var(--ink); color:var(--surface)}
+
+/* ---- menu sheet ---- */
+dialog#menu{margin:0 0 0 auto; height:100%; max-height:none; width:min(380px, 100vw); max-width:100vw; border:0; border-left:1px solid var(--line); padding:0; background:var(--surface); color:var(--ink)}
+dialog#menu::backdrop{background:rgba(8,14,20,.45)}
+.sheet{min-height:100%; padding:calc(16px + env(safe-area-inset-top,0px)) max(20px, env(safe-area-inset-right,0px)) calc(28px + env(safe-area-inset-bottom,0px)) 20px; display:flex; flex-direction:column; gap:24px}
+.sheet-head{display:flex; justify-content:space-between; align-items:center}
+.sheet h3{font:700 11px/1 var(--f-display); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:0 0 10px}
+.sheet p{margin:0 0 8px; font-size:13.5px; color:var(--muted)}
+.sheet a{color:var(--ink); font-weight:600}
+.opts{display:flex; flex-direction:column; gap:8px}
+.opt{display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid var(--line); border-radius:10px; cursor:pointer}
+.opt:has(input:checked){border-color:var(--sign); background:color-mix(in srgb, var(--sign) 8%, var(--surface))}
+.opt input,.checks input{accent-color:var(--sign)}
+.opt input{margin-top:3px}
+.opt b{display:block; font:700 14px/1.3 var(--f-display)}
+.opt small{display:block; color:var(--muted); font-size:12.5px; margin-top:2px; line-height:1.35}
+.checks label{display:flex; gap:10px; align-items:center; padding:6px 0; font-size:14px; cursor:pointer}
+
+@keyframes pulse{0%{transform:scale(.8); opacity:.45} 100%{transform:scale(2.6); opacity:0}}
+@keyframes blink{50%{opacity:.35}}
+@media (prefers-reduced-motion: reduce){
+  #map .you-pulse{animation:none; opacity:0}
+  .seg button[aria-pressed="true"] .live-dot{animation:none}
+  .g-val{transition:none}
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="plaque" role="img" aria-label="Snowbelt, Erie County, New York">
+      <div class="plaque-in"><span class="plaque-name">Snowbelt</span><span class="plaque-sub">Erie County, NY</span></div>
+    </div>
+    <div class="top-actions">
+      <div class="loc">
+        <button id="loc-btn" class="loc-pill" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="loc-pop">
+          <span class="loc-dot" aria-hidden="true"></span>
+          <span class="loc-state" id="loc-state">Location on</span>
+          <span class="loc-name" id="loc-name">UB North Campus</span>
+          <svg class="caret" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div id="loc-pop" class="pop" role="menu" hidden>
+          <p class="pop-note">Demo locations. The real app would ask the phone for its location.</p>
+          <div id="loc-list"></div>
+          <div class="pop-sep"></div>
+          <button type="button" class="pop-item" id="loc-off" role="menuitem">Turn location off</button>
+        </div>
+      </div>
+      <button id="menu-btn" class="icon-btn" type="button" aria-label="Open menu" aria-haspopup="dialog">
+        <svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><path d="M1 1h16M1 7h16M1 13h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <p class="notice"><span class="tag" id="notice-tag">Sample data</span><span id="notice-text">Test UI. Every number and pin is made up, not a forecast.</span><a href="https://www.weather.gov/buf" target="_blank" rel="noopener">Real conditions: NWS Buffalo</a></p>
+
+  <main class="grid">
+    <section class="card map-card" aria-labelledby="map-title">
+      <div class="map-head">
+        <div><h2 id="map-title">Storm total snowfall</h2><p class="sub">Tap a town or any spot to check it. Simplified map, not for navigation.</p></div>
+        <div class="readout"><span id="mode-tag" class="mode-tag live">Live</span><span id="time-read">Now</span></div>
+      </div>
+      <div class="map-wrap" id="map-wrap">
+        <svg id="map" role="img" aria-label="Map of Lake Erie and Erie County showing snowfall, shelters and government sites"></svg>
+        <div class="popup card" id="popup" hidden>
+          <div class="popup-top">
+            <div><span class="kind" id="pop-kind"></span><p class="popup-name" id="pop-name"></p></div>
+            <button type="button" class="x" id="pop-close" aria-label="Close"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+          </div>
+          <p>Sample location. Confirm with Erie County before relying on it.</p>
+          <div class="popup-row"><span id="pop-dist"></span><span id="pop-chip" class="chip low">Low</span></div>
+          <div class="popup-row"><span id="pop-cond"></span></div>
+          <button type="button" class="btn-line" id="pop-here">Show conditions here</button>
+        </div>
+      </div>
+      <div class="map-foot">
+        <div class="controls">
+          <div class="seg" role="group" aria-label="Map time">
+            <button type="button" id="btn-live" aria-pressed="true"><span class="live-dot" aria-hidden="true"></span>Live</button>
+            <button type="button" id="btn-future" aria-pressed="false">Future</button>
+          </div>
+          <div class="future" id="future" hidden>
+            <button type="button" class="icon-btn sm" id="play" aria-label="Play the next 24 hours">
+              <svg id="play-icon" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.8v10.4L12 7z" fill="currentColor"/></svg>
+            </button>
+            <div class="slider">
+              <input type="range" id="hour" min="0" max="24" step="1" value="6" aria-label="Hours ahead">
+              <div class="ticks" aria-hidden="true"><span>Now</span><span>+6 h</span><span>+12 h</span><span>+18 h</span><span>+24 h</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="legend">
+          <div class="ramp-wrap">
+            <span class="eyebrow">Snowfall, inches</span>
+            <div class="ramp">
+              <div><i class="r1"></i><span>1</span></div><div><i class="r2"></i><span>3</span></div><div><i class="r3"></i><span>6</span></div>
+              <div><i class="r4"></i><span>12</span></div><div><i class="r5"></i><span>24</span></div><div><i class="r6"></i><span>36+</span></div>
+            </div>
+          </div>
+          <ul class="keys">
+            <li><span class="k k-shelter"></span>Shelters &amp; warming centers</li>
+            <li><span class="k k-gov"></span>Law enforcement &amp; government</li>
+            <li><span class="k k-you"></span>You</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="card area-card" aria-labelledby="area-name">
+      <div class="area-head">
+        <div><div class="eyebrow" id="area-kind">Your location</div><h2 class="area-name" id="area-name">UB North Campus</h2></div>
+        <span class="chip low" id="area-chip">Low</span>
+      </div>
+      <p class="area-note" id="area-note"></p>
+      <button type="button" class="linkish" id="area-reset" hidden>Back to my location</button>
+      <div class="gauges">
+        <figure class="gauge" id="g-acc">
+          <figcaption class="g-title">Snow accumulation in area</figcaption>
+          <svg class="g-svg" viewBox="0 0 200 122" aria-hidden="true">
+            <path class="g-track" d="M22 106 A78 78 0 0 1 178 106" pathLength="100"/>
+            <path class="g-val" d="M22 106 A78 78 0 0 1 178 106" pathLength="100"/>
+            <text class="g-tick" x="22" y="121" text-anchor="middle">0</text>
+            <text class="g-tick g-mid" x="100" y="13" text-anchor="middle">12</text>
+            <text class="g-tick g-max" x="178" y="121" text-anchor="middle">24</text>
+            <text class="g-num" x="100" y="90" text-anchor="middle">0.0</text>
+            <text class="g-unit" x="100" y="110" text-anchor="middle">INCHES</text>
+          </svg>
+          <span class="chip low g-chip">Minor</span>
+          <span class="sr g-sr"></span>
+        </figure>
+        <figure class="gauge" id="g-rate">
+          <figcaption class="g-title">Snow rate</figcaption>
+          <svg class="g-svg" viewBox="0 0 200 122" aria-hidden="true">
+            <path class="g-track" d="M22 106 A78 78 0 0 1 178 106" pathLength="100"/>
+            <path class="g-val" d="M22 106 A78 78 0 0 1 178 106" pathLength="100"/>
+            <text class="g-tick" x="22" y="121" text-anchor="middle">0</text>
+            <text class="g-tick" x="100" y="13" text-anchor="middle">2</text>
+            <text class="g-tick" x="178" y="121" text-anchor="middle">4</text>
+            <text class="g-num" x="100" y="90" text-anchor="middle">0.0</text>
+            <text class="g-unit" x="100" y="110" text-anchor="middle">IN PER HOUR</text>
+          </svg>
+          <span class="chip low g-chip">Light</span>
+          <span class="sr g-sr"></span>
+        </figure>
+      </div>
+      <div class="next"><span id="next-label">Next 6 hours</span><b id="next-val">+0.0 in</b></div>
+    </section>
+
+    <section class="card list-card" aria-labelledby="list-title">
+      <div class="list-head"><h2 id="list-title">Areas with high risk</h2><span class="list-when" id="list-when">Currently</span></div>
+      <p class="counts" id="counts"></p>
+      <ul class="rows" id="rows"></ul>
+    </section>
+
+    <section class="card ai-card" aria-labelledby="ai-title">
+      <div class="ai-head"><h2 id="ai-title">AI assistance</h2><span class="status" id="ai-status"><span class="status-dot"></span><span id="ai-status-text">Connecting</span></span></div>
+      <div class="msgs" id="msgs" aria-live="polite">
+        <div class="msg bot">Ask about snow near you, a drive you're planning, or where to find help. I answer from the map data on this page.</div>
+      </div>
+      <div class="suggest" id="suggest">
+        <button type="button">Is it safe to drive to Orchard Park?</button>
+        <button type="button">Where's the nearest warming center?</button>
+        <button type="button">When will the snow ease up here?</button>
+      </div>
+      <form class="ask" id="ask-form">
+        <label for="ask-input" class="sr">Ask the assistant</label>
+        <input id="ask-input" autocomplete="off" placeholder="Ask about snow, roads or shelters">
+        <button type="submit" id="ask-send">Ask</button>
+      </form>
+    </section>
+  </main>
+</div>
+
+<dialog id="menu" aria-labelledby="menu-title">
+  <div class="sheet">
+    <div class="sheet-head"><h2 id="menu-title">Menu</h2>
+      <button type="button" class="x" id="menu-close" aria-label="Close menu"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    </div>
+    <section>
+      <h3>Storm</h3>
+      <div class="opts">
+        <label class="opt"><input type="radio" name="scn" value="today" id="scn-today" checked><span><b>Today</b><small>Sample storm for testing the screens</small></span></label>
+        <label class="opt"><input type="radio" name="scn" value="nov2022" id="scn-nov"><span><b>Past storm: November 2022</b><small>Replay of the Nov 17–20 lake-effect storm. Band and totals are illustrative, not observed data.</small></span></label>
+      </div>
+    </section>
+    <section>
+      <h3>Map layers</h3>
+      <div class="checks">
+        <label><input type="checkbox" id="layer-snow" checked>Snowfall</label>
+        <label><input type="checkbox" id="layer-shelters" checked>Shelters &amp; warming centers</label>
+        <label><input type="checkbox" id="layer-gov" checked>Law enforcement &amp; government</label>
+        <label><input type="checkbox" id="layer-roads" checked>Highways</label>
+      </div>
+    </section>
+    <section>
+      <h3>About this test</h3>
+      <p>Clickable version of the team whiteboard sketch for UB Hacking 2026. The snow band, totals and pins are sample data so the screens can be tested before the real feeds are wired in.</p>
+      <p>Planned sources: NWS gridded forecasts and alerts, Open-Meteo history, NOHRSC snowfall analysis.</p>
+      <p><a href="https://www.weather.gov/buf" target="_blank" rel="noopener">NWS Buffalo forecasts</a></p>
+    </section>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ===========================================================================
+     SNOWBELT test UI
+     ---------------------------------------------------------------------------
+     1. Geography: lat/lon are projected to SVG pixels at 10 px per km. The map is
+        drawn by hand because artifacts cannot load map tiles; the real app would
+        swap this for Leaflet + OpenStreetMap tiles.
+     2. Snow model (SAMPLE DATA): a lake-effect band is described by keyframes
+        (peak rate, the point it is centered on, the heading it points toward).
+          rate(point, hour) = peak * gauss(km across band) * gauss(km along band)
+        Storm totals are that rate summed hour by hour from the storm's start.
+     3. Every view (map cells, gauges, high-risk list, AI context) reads from that
+        one model, so replacing it with real NWS grids only touches section 2.
+     =========================================================================== */
+
+  /* ---------- 1. projection ---------- */
+  const LON0 = -79.30, LON1 = -78.45, LAT0 = 42.60, LAT1 = 43.12;
+  const KX = 111.32 * Math.cos(42.86 * Math.PI / 180);   // km per degree of longitude here
+  const KY = 111.0;                                        // km per degree of latitude
+  const S = 10;                                            // px per km
+  const W = Math.round((LON1 - LON0) * KX * S);
+  const H = Math.round((LAT1 - LAT0) * KY * S);
+  const VIEW_FULL = [0, 0, W, H];
+  const VIEW_PHONE = [150, 60, 470, 460];                  // tighter crop around the metro on small screens
+
+  const proj = (lat, lon) => [(lon - LON0) * KX * S, (LAT1 - lat) * KY * S];
+  const unproj = (x, y) => [LAT1 - y / (KY * S), LON0 + x / (KX * S)];
+  const kmBetween = (a, b) => Math.hypot((b.lon - a.lon) * KX, (b.lat - a.lat) * KY);
+  const toMi = km => km * 0.621371;
+  const bearing = (a, b) => (Math.atan2((b.lon - a.lon) * KX, (b.lat - a.lat) * KY) * 180 / Math.PI + 360) % 360;
+  const COMPASS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  const compass = deg => COMPASS[Math.round(deg / 22.5) % 16];
+
+  /* ---------- geography (simplified, lat/lon) ---------- */
+  const US_SHORE = [[42.886,-78.905],[42.866,-78.886],[42.845,-78.871],[42.820,-78.862],[42.795,-78.856],[42.775,-78.870],[42.755,-78.890],[42.735,-78.920],[42.715,-78.960],[42.697,-79.025],[42.676,-79.058],[42.650,-79.082],[42.625,-79.112],[42.600,-79.150],[42.575,-79.185]];
+  const CA_SHORE = [[42.874,-79.340],[42.877,-79.250],[42.862,-79.180],[42.846,-79.125],[42.836,-79.095],[42.852,-79.060],[42.866,-79.010],[42.873,-78.975],[42.888,-78.945],[42.900,-78.926]];
+  const RIVER_MAIN = [[42.900,-78.920],[42.920,-78.913],[42.948,-78.918],[42.972,-78.932]];
+  const RIVER_WEST = [[42.972,-78.932],[42.990,-78.965],[43.010,-78.995],[43.040,-79.018],[43.062,-79.036],[43.082,-79.052],[43.092,-79.066],[43.110,-79.062],[43.140,-79.058]];
+  const RIVER_EAST = [[42.972,-78.932],[42.995,-78.916],[43.020,-78.905],[43.045,-78.912],[43.064,-78.940],[43.074,-78.980],[43.080,-79.020],[43.082,-79.052]];
+
+  const ROADS = [
+    { n:'90',  major:true, pts:[[42.58,-79.17],[42.63,-79.03],[42.66,-78.95],[42.70,-78.88],[42.735,-78.84],[42.775,-78.825],[42.81,-78.81],[42.84,-78.795],[42.87,-78.79],[42.90,-78.765],[42.93,-78.745],[42.96,-78.715],[42.985,-78.68],[43.00,-78.60],[43.01,-78.43]] },
+    { n:'190', major:true, pts:[[42.87,-78.79],[42.873,-78.83],[42.88,-78.865],[42.895,-78.895],[42.92,-78.905],[42.955,-78.91],[42.99,-78.92],[43.02,-78.95],[43.05,-78.98],[43.075,-79.01],[43.10,-79.04],[43.14,-79.05]] },
+    { n:'290', major:true, pts:[[42.985,-78.91],[42.99,-78.87],[43.00,-78.83],[42.998,-78.78],[42.985,-78.74],[42.97,-78.712]] },
+    { n:'400', pts:[[42.855,-78.795],[42.84,-78.75],[42.82,-78.70],[42.795,-78.66],[42.775,-78.625],[42.76,-78.58],[42.74,-78.43]] },
+    { n:'219', pts:[[42.81,-78.81],[42.785,-78.775],[42.755,-78.76],[42.72,-78.75],[42.68,-78.745],[42.64,-78.735],[42.58,-78.72]] },
+    { n:'33',  pts:[[42.893,-78.865],[42.905,-78.82],[42.92,-78.78],[42.935,-78.73],[42.945,-78.69]] },
+  ];
+  const SHIELDS = [
+    { n:'90', at:[42.66,-78.95] }, { n:'190', at:[43.02,-78.95] }, { n:'290', at:[42.99,-78.87] },
+    { n:'400', at:[42.795,-78.66] }, { n:'219', at:[42.72,-78.75] }, { n:'33', at:[42.935,-78.73] },
+  ];
+
+  // lp = label placement [dx, dy, anchor] in screen px; pr 1 labels stay visible on phones
+  const TOWNS = [
+    { id:'buffalo', name:'Buffalo', lat:42.886, lon:-78.878, pr:1, lp:[-9,4,'end'] },
+    { id:'lackawanna', name:'Lackawanna', lat:42.825, lon:-78.823, pr:2, lp:[9,4,'start'] },
+    { id:'westseneca', name:'West Seneca', lat:42.850, lon:-78.799, pr:2, lp:[9,4,'start'] },
+    { id:'cheektowaga', name:'Cheektowaga', lat:42.903, lon:-78.755, pr:1, lp:[0,17,'middle'] },
+    { id:'lancaster', name:'Lancaster', lat:42.900, lon:-78.670, pr:2, lp:[9,4,'start'] },
+    { id:'amherst', name:'Amherst', lat:42.978, lon:-78.800, pr:1, lp:[9,4,'start'] },
+    { id:'williamsville', name:'Williamsville', lat:42.964, lon:-78.738, pr:2, lp:[9,4,'start'] },
+    { id:'tonawanda', name:'Tonawanda', lat:43.020, lon:-78.880, pr:2, lp:[9,4,'start'] },
+    { id:'grandisland', name:'Grand Island', lat:43.033, lon:-78.962, pr:2, lp:[0,-9,'middle'] },
+    { id:'niagarafalls', name:'Niagara Falls', lat:43.094, lon:-79.050, pr:2, lp:[9,4,'start'] },
+    { id:'orchardpark', name:'Orchard Park', lat:42.767, lon:-78.744, pr:1, lp:[9,4,'start'] },
+    { id:'hamburg', name:'Hamburg', lat:42.716, lon:-78.829, pr:1, lp:[9,4,'start'] },
+    { id:'eastaurora', name:'East Aurora', lat:42.768, lon:-78.613, pr:2, lp:[9,4,'start'] },
+    { id:'elma', name:'Elma', lat:42.832, lon:-78.636, pr:2, lp:[9,4,'start'] },
+    { id:'eden', name:'Eden', lat:42.652, lon:-78.897, pr:2, lp:[9,4,'start'] },
+    { id:'angola', name:'Angola', lat:42.638, lon:-79.028, pr:2, lp:[9,4,'start'] },
+    { id:'boston', name:'Boston', lat:42.629, lon:-78.737, pr:2, lp:[9,4,'start'] },
+    { id:'clarence', name:'Clarence', lat:42.977, lon:-78.592, pr:2, lp:[9,4,'start'] },
+    { id:'forterie', name:'Fort Erie, ON', lat:42.905, lon:-78.935, pr:2, lp:[-9,4,'end'], listed:false },
+  ];
+  const TOWN = Object.fromEntries(TOWNS.map(t => [t.id, t]));
+
+  // SAMPLE pins: invented placements so the layers can be tested. Replace with a verified list.
+  const PINS = [
+    { id:'s1',  type:'shelter', name:'Warming center, downtown Buffalo', lat:42.900, lon:-78.860 },
+    { id:'s2',  type:'shelter', name:'Warming center, South Buffalo', lat:42.842, lon:-78.818 },
+    { id:'s3',  type:'shelter', name:'Warming center, Cheektowaga', lat:42.912, lon:-78.772 },
+    { id:'s4',  type:'shelter', name:'Warming center, Orchard Park', lat:42.775, lon:-78.752 },
+    { id:'s5',  type:'shelter', name:'Warming center, Hamburg', lat:42.722, lon:-78.845 },
+    { id:'s6',  type:'shelter', name:'Emergency shelter, Amherst', lat:42.962, lon:-78.790 },
+    { id:'s7',  type:'shelter', name:'Emergency shelter, West Seneca', lat:42.866, lon:-78.800 },
+    { id:'s8',  type:'shelter', name:'Emergency shelter, Lackawanna', lat:42.818, lon:-78.838 },
+    { id:'s9',  type:'shelter', name:'Warming center, Tonawanda', lat:43.028, lon:-78.875 },
+    { id:'s10', type:'shelter', name:'Emergency shelter, East Aurora', lat:42.760, lon:-78.625 },
+    { id:'s11', type:'shelter', name:'Warming center, Lancaster', lat:42.908, lon:-78.685 },
+    { id:'g1',  type:'gov', name:'Buffalo City Hall', lat:42.8865, lon:-78.8784 },
+    { id:'g2',  type:'gov', name:'Police, Amherst', lat:42.995, lon:-78.815 },
+    { id:'g3',  type:'gov', name:'Police, Cheektowaga', lat:42.912, lon:-78.735 },
+    { id:'g4',  type:'gov', name:'Police, Orchard Park', lat:42.778, lon:-78.728 },
+    { id:'g5',  type:'gov', name:'Police, Hamburg', lat:42.703, lon:-78.840 },
+    { id:'g6',  type:'gov', name:'Police, West Seneca', lat:42.835, lon:-78.785 },
+    { id:'g7',  type:'gov', name:'Police, Tonawanda', lat:43.005, lon:-78.900 },
+    { id:'g8',  type:'gov', name:'Fire hall, Lackawanna', lat:42.808, lon:-78.815 },
+    { id:'g9',  type:'gov', name:'Police, Lancaster', lat:42.888, lon:-78.672 },
+  ];
+
+  const LOCATIONS = [
+    { id:'ub', name:'UB North Campus', lat:43.001, lon:-78.789 },
+    { id:'downtown', name:'Downtown Buffalo', lat:42.886, lon:-78.873 },
+    { id:'op', name:'Orchard Park', lat:42.767, lon:-78.744 },
+    { id:'hamburg', name:'Hamburg', lat:42.716, lon:-78.829 },
+  ];
+
+  /* ---------- 2. snow model (sample data) ---------- */
+  // keys: h = hours from "now", p = peak rate in/hr, lat/lon = band center, b = heading the band points toward
+  const SCENARIOS = {
+    today: {
+      long: 'Today (sample storm)', start: -12, gaugeMax: 24, windMph: 26, width: 8, bg: 0.025, base: null,
+      keys: [
+        { h:-12, p:0.0, lat:42.780, lon:-78.780, b:70 },
+        { h:-8,  p:0.5, lat:42.780, lon:-78.780, b:70 },
+        { h:-3,  p:1.5, lat:42.765, lon:-78.770, b:72 },
+        { h:0,   p:2.1, lat:42.785, lon:-78.780, b:70 },
+        { h:4,   p:2.5, lat:42.835, lon:-78.785, b:68 },
+        { h:8,   p:2.0, lat:42.895, lon:-78.790, b:66 },
+        { h:12,  p:1.4, lat:42.860, lon:-78.785, b:68 },
+        { h:18,  p:0.9, lat:42.770, lon:-78.770, b:72 },
+        { h:24,  p:0.3, lat:42.710, lon:-78.760, b:75 },
+      ],
+    },
+    nov2022: {
+      long: 'November 17–20, 2022 lake-effect storm (illustrative replay, not observed data)', start: -20, gaugeMax: 60, windMph: 30, width: 8, bg: 0.03,
+      base: new Date(2022, 10, 18, 14, 0, 0),
+      keys: [
+        { h:-20, p:0.4, lat:42.800, lon:-78.800, b:66 },
+        { h:-16, p:1.8, lat:42.790, lon:-78.795, b:66 },
+        { h:-10, p:3.0, lat:42.795, lon:-78.790, b:65 },
+        { h:-4,  p:2.8, lat:42.780, lon:-78.780, b:67 },
+        { h:0,   p:2.4, lat:42.790, lon:-78.785, b:66 },
+        { h:6,   p:1.6, lat:42.825, lon:-78.800, b:64 },
+        { h:12,  p:1.3, lat:42.780, lon:-78.775, b:68 },
+        { h:18,  p:1.1, lat:42.765, lon:-78.765, b:70 },
+        { h:24,  p:0.6, lat:42.775, lon:-78.770, b:69 },
+      ],
+    },
+  };
+
+  // Band state at any (fractional) hour, linearly interpolated between keyframes
+  function frameAt(sc, h) {
+    const k = sc.keys, last = k[k.length - 1];
+    if (h <= k[0].h) return k[0];
+    if (h >= last.h) return last;
+    for (let i = 0; i < k.length - 1; i++) {
+      const a = k[i], b = k[i + 1];
+      if (h >= a.h && h <= b.h) {
+        const t = (h - a.h) / (b.h - a.h), m = (u, v) => u + (v - u) * t;
+        return { h, p: m(a.p, b.p), lat: m(a.lat, b.lat), lon: m(a.lon, b.lon), b: m(a.b, b.b) };
+      }
+    }
+    return last;
+  }
+
+  // Snowfall rate (in/hr) at a point and hour
+  function rateAt(sc, lat, lon, h) {
+    const f = frameAt(sc, h);
+    if (f.p <= 0) return 0;
+    const dx = (lon - f.lon) * KX, dy = (lat - f.lat) * KY;     // km from band center
+    const r = f.b * Math.PI / 180, ux = Math.sin(r), uy = Math.cos(r);
+    const along = dx * ux + dy * uy, across = dx * uy - dy * ux;
+    const core = Math.exp(-(across * across) / (sc.width * sc.width)) * Math.exp(-(along * along) / (30 * 30));
+    return f.p * core + sc.bg * Math.min(1, f.p / 0.5);         // band + light background snow
+  }
+
+  // Storm total at each whole hour from the start (index 0 = storm start, index n = +24 h)
+  function series(sc, lat, lon) {
+    const n = 24 - sc.start, out = new Float32Array(n + 1);
+    let sum = 0;
+    for (let i = 0; i < n; i++) { sum += rateAt(sc, lat, lon, sc.start + i + 0.5); out[i + 1] = sum; }
+    return out;
+  }
+  function accAt(ser, sc, h) {
+    const t = Math.max(0, Math.min(ser.length - 1, h - sc.start)), i = Math.floor(t), f = t - i;
+    return i >= ser.length - 1 ? ser[ser.length - 1] : ser[i] + (ser[i + 1] - ser[i]) * f;
+  }
+
+  const CELL = 20, COLS = Math.ceil(W / CELL), ROWS = Math.ceil(H / CELL);
+  const models = {};
+  function buildModel(key) {
+    if (models[key]) return models[key];
+    const sc = SCENARIOS[key], cells = [], towns = {};
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      const [lat, lon] = unproj(c * CELL + CELL / 2, r * CELL + CELL / 2);
+      cells.push(series(sc, lat, lon));
+    }
+    for (const t of TOWNS) towns[t.id] = series(sc, t.lat, t.lon);
+    return (models[key] = { cells, towns, points: new Map() });
+  }
+
+  const LEVEL = { high: 'High', mod: 'Moderate', low: 'Low' };
+  const riskOf = (acc, rate) => (rate >= 1.5 || acc >= 10) ? 'high' : (rate >= 0.5 || acc >= 4) ? 'mod' : 'low';
+  const accLevel = acc => acc >= 10 ? 'high' : acc >= 4 ? 'mod' : 'low';
+  const accWord = acc => acc >= 10 ? 'Major' : acc >= 4 ? 'Significant' : 'Minor';
+  const rateLevel = r => r >= 1.5 ? 'high' : r >= 0.5 ? 'mod' : 'low';
+  const rateWord = r => r >= 2 ? 'Intense' : r >= 1 ? 'Heavy' : r >= 0.5 ? 'Moderate' : r >= 0.1 ? 'Light' : 'None';
+  const fAcc = v => v < 10 ? v.toFixed(1) : Math.round(v).toString();
+  const fRate = v => v.toFixed(1);
+
+  /* ---------- app state ---------- */
+  const NOW_BASE = (() => { const d = new Date(); d.setMinutes(0, 0, 0); return d; })();
+  const state = {
+    scenario: 'today', mode: 'live', h: 0, playing: false,
+    user: { ...LOCATIONS[0], kind: 'you' },    // demo location
+    area: null,                                 // null = follow the user's location
+    popup: null,
+    layers: { snow: true, shelters: true, gov: true, roads: true },
+    listAll: false,
+  };
+  let model = buildModel('today');
+  const SC = () => SCENARIOS[state.scenario];
+  const townPlace = t => ({ kind: 'town', townId: t.id, name: t.name, lat: t.lat, lon: t.lon });
+
+  function currentArea() {
+    if (state.area) return state.area;
+    if (state.user) return state.user;
+    return townPlace(TOWN.buffalo);
+  }
+  function seriesFor(place) {
+    if (place.townId) return model.towns[place.townId];
+    const key = place.lat.toFixed(4) + ',' + place.lon.toFixed(4);
+    if (!model.points.has(key)) model.points.set(key, series(SC(), place.lat, place.lon));
+    return model.points.get(key);
+  }
+  function conditions(place, h) {
+    const acc = accAt(seriesFor(place), SC(), h), rate = rateAt(SC(), place.lat, place.lon, h);
+    return { acc, rate, level: riskOf(acc, rate) };
+  }
+  function nearestTown(lat, lon) {
+    let best = null, bd = Infinity;
+    for (const t of TOWNS) { if (t.listed === false) continue; const d = kmBetween({ lat, lon }, t); if (d < bd) { bd = d; best = t; } }
+    return best;
+  }
+  function timeAt(h) { const base = SC().base || NOW_BASE; return new Date(base.getTime() + h * 3600e3); }
+  function fmtTime(d) {
+    const opts = state.scenario === 'nov2022'
+      ? { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }
+      : { weekday: 'short', hour: 'numeric', minute: '2-digit' };
+    return d.toLocaleString('en-US', opts);
+  }
+
+  /* ---------- SVG helpers ---------- */
+  const NS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  const f1 = v => v.toFixed(1);
+  // Smooth line through points (Catmull-Rom converted to cubic Beziers)
+  function curve(pts, move = true) {
+    const P = pts.map(p => proj(p[0], p[1]));
+    let d = (move ? 'M' : 'L') + f1(P[0][0]) + ' ' + f1(P[0][1]);
+    for (let i = 0; i < P.length - 1; i++) {
+      const p0 = P[Math.max(i - 1, 0)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(i + 2, P.length - 1)];
+      d += 'C' + f1(p1[0] + (p2[0] - p0[0]) / 6) + ' ' + f1(p1[1] + (p2[1] - p0[1]) / 6) + ' '
+        + f1(p2[0] - (p3[0] - p1[0]) / 6) + ' ' + f1(p2[1] - (p3[1] - p1[1]) / 6) + ' ' + f1(p2[0]) + ' ' + f1(p2[1]);
+    }
+    return d;
+  }
+  const L = (lat, lon) => { const [x, y] = proj(lat, lon); return 'L' + f1(x) + ' ' + f1(y); };
+
+  /* ---------- build the static map ---------- */
+  const $ = id => document.getElementById(id);
+  const svg = $('map'), mapWrap = $('map-wrap');
+  svg.setAttribute('viewBox', VIEW_FULL.join(' '));
+  const defs = el('defs', {}, svg);
+  const flt = el('filter', { id: 'soften', x: '-5%', y: '-5%', width: '110%', height: '110%', 'color-interpolation-filters': 'sRGB' }, defs);
+  el('feGaussianBlur', { stdDeviation: '11' }, flt);
+
+  el('rect', { class: 'land', x: -50, y: -50, width: W + 100, height: H + 100 }, svg);
+  const ontEl = el('path', { class: 'ontario', d: 'M' + proj(43.16, -79.34).map(f1).join(' ') + L(42.874, -79.34) + curve(CA_SHORE, false) + curve(RIVER_MAIN.concat(RIVER_WEST.slice(1)), false) + L(43.16, -79.058) + 'Z' }, svg);
+  const lakeEl = el('path', { class: 'lake', d: curve(US_SHORE) + L(42.55, -79.36) + L(42.874, -79.36) + curve(CA_SHORE, false) + 'Z' }, svg);
+  el('path', { class: 'river', d: curve(RIVER_MAIN), 'stroke-width': 8 }, svg);
+  el('path', { class: 'river', d: curve(RIVER_WEST), 'stroke-width': 5.5 }, svg);
+  el('path', { class: 'river', d: curve(RIVER_EAST), 'stroke-width': 4.5 }, svg);
+
+  const snowG = el('g', { class: 'snow', filter: 'url(#soften)' }, svg);
+  const rects = [];
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const rc = el('rect', { x: c * CELL, y: r * CELL, width: CELL + 1, height: CELL + 1, class: 'b0' }, snowG);
+    rc._b = 0; rects.push(rc);
+  }
+  const roadsG = el('g', { class: 'roads' }, svg);
+  for (const rd of ROADS) el('path', { class: 'road' + (rd.major ? ' major' : ''), d: curve(rd.pts) }, roadsG);
+  const shieldsG = el('g', { class: 'roads' }, svg);
+  const labelsG = el('g', { class: 'labels' }, svg);
+  const lakeLbl = proj(42.80, -79.04);
+  el('text', { class: 'water-label', x: f1(lakeLbl[0]), y: f1(lakeLbl[1]), 'text-anchor': 'middle' }, labelsG).textContent = 'LAKE ERIE';
+  const onLbl = proj(43.06, -79.17);
+  el('text', { class: 'land-label', x: f1(onLbl[0]), y: f1(onLbl[1]), 'text-anchor': 'middle' }, labelsG).textContent = 'ONTARIO';
+  const nyLbl = proj(42.66, -78.60);
+  el('text', { class: 'land-label', x: f1(nyLbl[0]), y: f1(nyLbl[1]), 'text-anchor': 'middle' }, labelsG).textContent = 'NEW YORK';
+  const windG = el('g', { class: 'wind' }, svg);
+  const townsG = el('g', {}, svg);
+  const pinsG = el('g', {}, svg);
+  const markG = el('g', { class: 'labels' }, svg);
+
+  /* ---------- scale-dependent drawing ---------- */
+  let U = 1, lastW = 0;
+  function layoutMap() {
+    const w = mapWrap.clientWidth;
+    if (!w || w === lastW) return;
+    lastW = w;
+    const view = w < 560 ? VIEW_PHONE : VIEW_FULL;
+    svg.setAttribute('viewBox', view.join(' '));
+    U = view[2] / w;                                   // user units per screen px
+    svg.style.setProperty('--u', U.toFixed(3));
+    drawOverlay(); drawWind(); drawMarkers();
+  }
+
+  function drawOverlay() {
+    shieldsG.textContent = ''; townsG.textContent = ''; pinsG.textContent = '';
+    roadsG.style.display = shieldsG.style.display = state.layers.roads ? '' : 'none';
+    const dense = U > 1.25;
+    if (!dense) for (const s of SHIELDS) {
+      const [x, y] = proj(s.at[0], s.at[1]);
+      const w = (s.n.length * 6.2 + 8) * U, h = 13 * U;
+      const g = el('g', { class: 'shield' }, shieldsG);
+      el('rect', { x: f1(x - w / 2), y: f1(y - h / 2), width: f1(w), height: f1(h), rx: f1(3 * U) }, g);
+      el('text', { x: f1(x), y: f1(y + 3.4 * U), 'text-anchor': 'middle' }, g).textContent = s.n;
+    }
+    const selId = currentArea().townId;
+    for (const t of TOWNS) {
+      if (dense && t.pr > 1 && t.id !== selId) continue;
+      const [x, y] = proj(t.lat, t.lon);
+      const g = el('g', { class: 'town' + (t.id === selId ? ' sel' : ''), 'data-town': t.id, tabindex: t.listed === false ? -1 : 0, role: 'button', 'aria-label': 'Show conditions for ' + t.name }, townsG);
+      el('circle', { class: 'hit', cx: f1(x), cy: f1(y), r: f1(11 * U) }, g);
+      el('circle', { class: 'town-dot', cx: f1(x), cy: f1(y), r: f1(2.4 * U) }, g);
+      el('text', { class: 'town-label', x: f1(x + t.lp[0] * U), y: f1(y + t.lp[1] * U), 'text-anchor': t.lp[2] }, g).textContent = t.name;
+    }
+    for (const p of PINS) {
+      if (!state.layers[p.type === 'shelter' ? 'shelters' : 'gov']) continue;
+      const [x, y] = proj(p.lat, p.lon), r = 5.5 * U;
+      const g = el('g', { class: 'pin ' + p.type + (state.popup === p.id ? ' open' : ''), 'data-pin': p.id, tabindex: 0, role: 'button', 'aria-label': p.name }, pinsG);
+      el('circle', { class: 'hit', cx: f1(x), cy: f1(y), r: f1(r * 2.2) }, g);
+      if (p.type === 'shelter') el('circle', { class: 'mark', cx: f1(x), cy: f1(y), r: f1(r) }, g);
+      else el('rect', { class: 'mark', x: f1(x - r * 0.82), y: f1(y - r * 0.82), width: f1(r * 1.64), height: f1(r * 1.64), rx: f1(r * 0.2), transform: 'rotate(45 ' + f1(x) + ' ' + f1(y) + ')' }, g);
+    }
+  }
+
+  // Wind arrow over the lake: lake-effect bands line up with the wind
+  function drawWind() {
+    windG.textContent = '';
+    const k = frameAt(SC(), state.h);
+    if (k.p <= 0) return;
+    const [cx, cy] = proj(42.725, -78.985);
+    const r = k.b * Math.PI / 180, vx = Math.sin(r), vy = -Math.cos(r), len = 34 * U, hs = 9 * U;
+    const x2 = cx + vx * len, y2 = cy + vy * len, bx = x2 - vx * hs, by = y2 - vy * hs;
+    el('line', { class: 'wind-line', x1: f1(cx - vx * len), y1: f1(cy - vy * len), x2: f1(bx), y2: f1(by) }, windG);
+    el('path', { class: 'wind-head', d: 'M' + f1(x2) + ' ' + f1(y2) + 'L' + f1(bx - vy * hs * 0.55) + ' ' + f1(by + vx * hs * 0.55) + 'L' + f1(bx + vy * hs * 0.55) + ' ' + f1(by - vx * hs * 0.55) + 'Z' }, windG);
+    const from = (k.b + 180) % 360;
+    el('text', { class: 'wind-label', x: f1(cx), y: f1(cy + 26 * U), 'text-anchor': 'middle' }, windG).textContent = 'Wind ' + compass(from) + ' ' + SC().windMph + ' mph';
+  }
+
+  function drawMarkers() {
+    markG.textContent = '';
+    const a = currentArea();
+    if (a.kind !== 'you') {
+      const [x, y] = proj(a.lat, a.lon);
+      const g = el('g', { class: 'sel-mark' }, markG);
+      el('circle', { cx: f1(x), cy: f1(y), r: f1(13 * U) }, g);
+      el('path', { d: 'M' + f1(x - 20 * U) + ' ' + f1(y) + 'h' + f1(8 * U) + 'M' + f1(x + 12 * U) + ' ' + f1(y) + 'h' + f1(8 * U) + 'M' + f1(x) + ' ' + f1(y - 20 * U) + 'v' + f1(8 * U) + 'M' + f1(x) + ' ' + f1(y + 12 * U) + 'v' + f1(8 * U) }, g);
+    }
+    if (state.user) {
+      const [x, y] = proj(state.user.lat, state.user.lon);
+      el('circle', { class: 'you-pulse', cx: f1(x), cy: f1(y), r: f1(7 * U) }, markG);
+      el('circle', { class: 'you-dot', cx: f1(x), cy: f1(y), r: f1(6.5 * U) }, markG);
+    }
+  }
+
+  const BINS = [1, 3, 6, 12, 24, 36];
+  function renderSnow() {
+    snowG.style.display = state.layers.snow ? '' : 'none';
+    if (!state.layers.snow) return;
+    const sc = SC();
+    for (let i = 0; i < rects.length; i++) {
+      const a = accAt(model.cells[i], sc, state.h);
+      let b = 0;
+      for (let j = 0; j < BINS.length; j++) if (a >= BINS[j]) b = j + 1;
+      if (rects[i]._b !== b) { rects[i]._b = b; rects[i].setAttribute('class', 'b' + b); }
+    }
+  }
+
+  /* ---------- panels ---------- */
+  function renderReadout() {
+    const tag = $('mode-tag');
+    const live = state.mode === 'live';
+    tag.textContent = live ? (state.scenario === 'nov2022' ? 'Replay' : 'Live') : '+' + Math.round(state.h) + ' h';
+    tag.classList.toggle('live', live);
+    $('time-read').textContent = fmtTime(timeAt(Math.round(state.h)));
+  }
+
+  function setGauge(id, value, max, level, numText, word, srText) {
+    const g = $(id), f = Math.max(0, Math.min(1, value / max));
+    const v = g.querySelector('.g-val');
+    v.style.strokeDasharray = (f * 100).toFixed(2) + ' 100';
+    v.style.stroke = 'var(--risk-' + level + ')';
+    g.querySelector('.g-num').textContent = numText;
+    const chip = g.querySelector('.g-chip');
+    chip.className = 'chip g-chip ' + level; chip.textContent = word;
+    g.querySelector('.g-sr').textContent = srText;
+  }
+
+  function renderArea() {
+    const a = currentArea(), h = state.h, c = conditions(a, h), max = SC().gaugeMax;
+    $('area-kind').textContent = a.kind === 'you' ? 'Your location' : a.kind === 'town' ? 'Selected town' : a.kind === 'pin' ? 'Selected site' : 'Selected spot';
+    $('area-name').textContent = a.name;
+    const chip = $('area-chip'); chip.className = 'chip ' + c.level; chip.textContent = LEVEL[c.level] + ' risk';
+    $('area-note').textContent = c.level === 'high' ? 'Travel not advised here. Stay put or head to a warming center if you lose heat.'
+      : c.level === 'mod' ? 'Roads are likely snow-covered. Drive only if you need to and leave extra time.'
+      : 'Light or no snow here. Watch for the band shifting.';
+    $('area-reset').hidden = !(state.user && a.kind !== 'you');
+    document.querySelector('#g-acc .g-mid').textContent = max / 2;
+    document.querySelector('#g-acc .g-max').textContent = max;
+    setGauge('g-acc', c.acc, max, accLevel(c.acc), fAcc(c.acc), accWord(c.acc), fAcc(c.acc) + ' inches of snow, ' + accWord(c.acc));
+    setGauge('g-rate', c.rate, 4, rateLevel(c.rate), fRate(c.rate), rateWord(c.rate), fRate(c.rate) + ' inches per hour, ' + rateWord(c.rate));
+    const end = Math.min(24, h + 6), span = Math.round(end - h);
+    const ser = seriesFor(a), add = accAt(ser, SC(), end) - accAt(ser, SC(), h);
+    $('next-label').textContent = span >= 1 ? 'Next ' + span + ' hours' : 'Forecast window ends at +24 h';
+    $('next-val').textContent = span >= 1 ? '+' + fAcc(add) + ' in' : '';
+  }
+
+  function townRows(h) {
+    return TOWNS.filter(t => t.listed !== false).map(t => ({ t, ...conditions(townPlace(t), h) }));
+  }
+
+  function renderList() {
+    const h = state.h, order = { high: 0, mod: 1, low: 2 };
+    const all = townRows(h);
+    const shown = all.filter(r => r.level !== 'low').sort((a, b) => order[a.level] - order[b.level] || b.acc - a.acc);
+    const nh = all.filter(r => r.level === 'high').length, nm = all.filter(r => r.level === 'mod').length;
+    $('list-when').textContent = state.mode === 'live' ? (state.scenario === 'nov2022' ? 'At replay start' : 'Currently') : 'At ' + fmtTime(timeAt(Math.round(h))).replace(/^\w+,? /, '') + ' (+' + Math.round(h) + ' h)';
+    $('counts').textContent = nh + ' high · ' + nm + ' moderate · ' + (all.length - nh - nm) + ' low of ' + all.length + ' towns';
+    const ul = $('rows'); ul.textContent = '';
+    const selId = currentArea().townId;
+    if (!shown.length) {
+      const p = document.createElement('li'); p.className = 'empty'; p.textContent = 'No towns above low risk at this time.'; ul.appendChild(p); return;
+    }
+    const LIMIT = 8, visible = state.listAll ? shown : shown.slice(0, LIMIT);
+    for (const r of visible) {
+      const li = document.createElement('li');
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'row'; b.dataset.town = r.t.id;
+      if (r.t.id === selId) b.setAttribute('aria-current', 'true');
+      const n = document.createElement('span'); n.className = 'row-name'; n.textContent = r.t.name;
+      const m = document.createElement('span'); m.className = 'row-meta'; m.textContent = fAcc(r.acc) + ' in so far · ' + fRate(r.rate) + ' in/hr';
+      const c = document.createElement('span'); c.className = 'chip ' + r.level; c.textContent = LEVEL[r.level];
+      b.append(n, m, c); li.appendChild(b); ul.appendChild(li);
+    }
+    if (shown.length > LIMIT) {
+      const li = document.createElement('li'), more = document.createElement('button');
+      more.type = 'button'; more.className = 'more'; more.dataset.more = '1';
+      more.textContent = state.listAll ? 'Show fewer' : 'Show all ' + shown.length + ' towns';
+      li.appendChild(more); ul.appendChild(li);
+    }
+  }
+
+  function renderPopup() {
+    const p = PINS.find(x => x.id === state.popup), box = $('popup');
+    if (!p) { box.hidden = true; return; }
+    box.hidden = false;
+    const kind = $('pop-kind'); kind.textContent = '';
+    const dot = document.createElement('span'); dot.className = 'k ' + (p.type === 'shelter' ? 'k-shelter' : 'k-gov');
+    kind.append(dot, p.type === 'shelter' ? 'Shelter / warming center' : 'Law enforcement / government');
+    $('pop-name').textContent = p.name;
+    const from = state.user || currentArea();
+    $('pop-dist').textContent = toMi(kmBetween(from, p)).toFixed(1) + ' mi from ' + (state.user ? 'you' : from.name);
+    const c = conditions({ lat: p.lat, lon: p.lon }, state.h);
+    $('pop-cond').textContent = 'Here: ' + fAcc(c.acc) + ' in so far · ' + fRate(c.rate) + ' in/hr';
+    const chip = $('pop-chip'); chip.className = 'chip ' + c.level; chip.textContent = LEVEL[c.level] + ' risk';
+  }
+
+  function renderAll() {
+    renderSnow(); drawWind(); drawMarkers(); renderReadout(); renderArea(); renderList();
+    if (state.popup) renderPopup();
+  }
+  function onSelectionChange() { drawOverlay(); renderAll(); }
+
+  /* ---------- map interaction ---------- */
+  function svgPoint(e) {
+    const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+    const m = svg.getScreenCTM(); return m ? pt.matrixTransform(m.inverse()) : null;
+  }
+  function inFill(elm, x, y) {
+    try { const pt = svg.createSVGPoint(); pt.x = x; pt.y = y; return elm.isPointInFill(pt); } catch (_) { return false; }
+  }
+  function selectTown(id) { state.area = townPlace(TOWN[id]); onSelectionChange(); }
+  function openPin(id) { state.popup = id; drawOverlay(); renderPopup(); }
+  function activate(target, e) {
+    const pin = target.closest('[data-pin]'); if (pin) { openPin(pin.dataset.pin); return true; }
+    const town = target.closest('[data-town]'); if (town) { selectTown(town.dataset.town); return true; }
+    return false;
+  }
+  svg.addEventListener('click', e => {
+    if (activate(e.target, e)) return;
+    const p = svgPoint(e); if (!p) return;
+    const [lat, lon] = unproj(p.x, p.y);
+    let name;
+    if (inFill(lakeEl, p.x, p.y)) name = 'Over Lake Erie';
+    else if (inFill(ontEl, p.x, p.y)) name = 'Ontario side of the river';
+    else name = 'Near ' + nearestTown(lat, lon).name;
+    state.area = { kind: 'point', name, lat, lon };
+    onSelectionChange();
+  });
+  svg.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { if (activate(e.target, e)) e.preventDefault(); }
+  });
+  $('pop-close').onclick = () => { state.popup = null; renderPopup(); drawOverlay(); };
+  $('pop-here').onclick = () => {
+    const p = PINS.find(x => x.id === state.popup); if (!p) return;
+    state.area = { kind: 'pin', name: p.name, lat: p.lat, lon: p.lon };
+    state.popup = null; renderPopup(); onSelectionChange();
+  };
+  $('area-reset').onclick = () => { state.area = null; onSelectionChange(); };
+  $('rows').addEventListener('click', e => {
+    if (e.target.closest('[data-more]')) { state.listAll = !state.listAll; renderList(); return; }
+    const b = e.target.closest('[data-town]'); if (b) selectTown(b.dataset.town);
+  });
+
+  /* ---------- live / future + play ---------- */
+  const slider = $('hour');
+  function setMode(mode) {
+    stopPlay();
+    state.mode = mode;
+    $('btn-live').setAttribute('aria-pressed', String(mode === 'live'));
+    $('btn-future').setAttribute('aria-pressed', String(mode === 'future'));
+    $('future').hidden = mode !== 'future';
+    state.h = mode === 'live' ? 0 : (+slider.value || 6);
+    if (mode === 'future' && state.h === 0) { state.h = 6; slider.value = 6; }
+    renderAll();
+  }
+  $('btn-live').onclick = () => setMode('live');
+  $('btn-future').onclick = () => setMode('future');
+  slider.addEventListener('input', () => { stopPlay(); state.h = +slider.value; renderAll(); });
+
+  let raf = 0;
+  const PLAY = '<path d="M3 1.8v10.4L12 7z" fill="currentColor"/>', PAUSE = '<path d="M3 2h3v10H3zM8 2h3v10H8z" fill="currentColor"/>';
+  function stopPlay() {
+    if (!state.playing) return;
+    state.playing = false; cancelAnimationFrame(raf);
+    document.body.classList.remove('playing');
+    $('play-icon').innerHTML = PLAY; $('play').setAttribute('aria-label', 'Play the next 24 hours');
+  }
+  $('play').onclick = () => {
+    if (state.playing) { stopPlay(); return; }
+    if (state.h >= 24) state.h = 0;
+    state.playing = true; document.body.classList.add('playing');
+    $('play-icon').innerHTML = PAUSE; $('play').setAttribute('aria-label', 'Pause');
+    let last = performance.now();
+    const step = t => {
+      state.h = Math.min(24, state.h + (t - last) / 1000 * 5);    // 5 forecast hours per second
+      last = t;
+      slider.value = Math.round(state.h);
+      renderAll();
+      if (state.h >= 24) { stopPlay(); renderAll(); return; }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+  };
+
+  /* ---------- location pill ---------- */
+  const locBtn = $('loc-btn'), locPop = $('loc-pop');
+  function renderLocPill() {
+    if (state.user) { locBtn.removeAttribute('data-off'); $('loc-state').textContent = 'Location on'; $('loc-name').textContent = state.user.name; }
+    else { locBtn.setAttribute('data-off', ''); $('loc-state').textContent = 'Location'; $('loc-name').textContent = 'Off'; }
+    const list = $('loc-list'); list.textContent = '';
+    for (const loc of LOCATIONS) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'pop-item'; b.setAttribute('role', 'menuitemradio');
+      b.setAttribute('aria-checked', String(!!state.user && state.user.id === loc.id)); b.textContent = loc.name;
+      b.onclick = () => { state.user = { ...loc, kind: 'you' }; state.area = null; closeLoc(); renderLocPill(); onSelectionChange(); };
+      list.appendChild(b);
+    }
+    $('loc-off').hidden = !state.user;
+  }
+  function closeLoc() { locPop.hidden = true; locBtn.setAttribute('aria-expanded', 'false'); }
+  locBtn.onclick = e => { e.stopPropagation(); const open = locPop.hidden; locPop.hidden = !open; locBtn.setAttribute('aria-expanded', String(open)); };
+  $('loc-off').onclick = () => { state.user = null; if (!state.area) state.area = townPlace(TOWN.buffalo); closeLoc(); renderLocPill(); onSelectionChange(); };
+  document.addEventListener('click', e => { if (!locPop.hidden && !e.target.closest('.loc')) closeLoc(); });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (!locPop.hidden) { closeLoc(); locBtn.focus(); }
+    else if (state.popup) { state.popup = null; renderPopup(); drawOverlay(); }
+  });
+
+  /* ---------- menu ---------- */
+  const menu = $('menu');
+  $('menu-btn').onclick = () => { if (typeof menu.showModal === 'function') menu.showModal(); else menu.setAttribute('open', ''); };
+  $('menu-close').onclick = () => menu.close ? menu.close() : menu.removeAttribute('open');
+  menu.addEventListener('click', e => { if (e.target === menu) menu.close(); });   // click on backdrop
+  document.querySelectorAll('input[name="scn"]').forEach(r => r.addEventListener('change', () => {
+    stopPlay();
+    state.scenario = r.value; model = buildModel(r.value);
+    const replay = r.value === 'nov2022';
+    $('notice-tag').textContent = replay ? 'Replay' : 'Sample data';
+    $('notice-text').textContent = replay
+      ? 'Replay of the Nov 17–20, 2022 lake-effect storm. Band position and totals are illustrative, not observed data.'
+      : 'Test UI. Every number and pin is made up, not a forecast.';
+    $('btn-live').lastChild.textContent = replay ? 'Replay' : 'Live';
+    renderAll();
+  }));
+  const layerMap = { 'layer-snow': 'snow', 'layer-shelters': 'shelters', 'layer-gov': 'gov', 'layer-roads': 'roads' };
+  for (const id in layerMap) $(id).addEventListener('change', e => {
+    state.layers[layerMap[id]] = e.target.checked;
+    const p = PINS.find(x => x.id === state.popup);
+    if (p && !state.layers[p.type === 'shelter' ? 'shelters' : 'gov']) { state.popup = null; renderPopup(); }
+    drawOverlay(); renderSnow();
+  });
+
+  /* ---------- AI assistance ---------- */
+  // Uses the page's "ask Claude" capability when the viewer allows it; otherwise answers from the model directly.
+  let ask = null, checked = false, busy = false, ctl = null;
+  const turns = [];
+  const OFF_CODES = new Set(['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed', 'session_expired']);
+  const msgs = $('msgs'), input = $('ask-input'), send = $('ask-send');
+
+  function setStatus() {
+    const s = $('ai-status');
+    s.classList.toggle('on', !!ask);
+    $('ai-status-text').textContent = !checked ? 'Connecting' : ask ? 'Answers by Claude' : 'Offline answers';
+  }
+  if (window.claude && typeof window.claude.use === 'function') {
+    window.claude.use('sample').then(fn => { ask = fn || null; checked = true; setStatus(); }, () => { checked = true; setStatus(); });
+  } else { checked = true; }
+  setStatus();
+
+  function addMsg(role, text) {
+    const d = document.createElement('div'); d.className = 'msg ' + role; d.textContent = text;
+    msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; return d;
+  }
+  function setBusy(on) {
+    busy = on;
+    send.textContent = on ? 'Stop' : 'Ask'; send.classList.toggle('stop', on);
+    document.querySelectorAll('#suggest button').forEach(b => { b.disabled = on; });
+  }
+
+  const RULES = [
+    'You are the assistant inside Snowbelt, a hackathon test app about lake-effect snow around Buffalo, New York.',
+    'Answer using only the DATA below. Every number and location in it is sample or illustrative data, not a real forecast. If the user asks about real, current conditions, say this test app uses sample data and point them to the National Weather Service Buffalo office at weather.gov/buf.',
+    'Write plain text with no markdown, at most 90 words. Use inches, inches per hour and miles. Name specific towns and sites.',
+    'For driving questions, name any high-risk towns at or near the destination and along the way (use the distance and direction info), and suggest waiting or avoiding them. Never promise a road is safe.',
+    'If someone is in danger, tell them to call 911.',
+  ].join('\n');
+
+  function aiData() {
+    const sc = SC(), h = state.h, k = frameAt(sc, h), a = currentArea(), c = conditions(a, h), lines = [];
+    const from = state.user;
+    lines.push('Storm: ' + sc.long + '.');
+    lines.push('Time shown: ' + fmtTime(timeAt(Math.round(h))) + (state.mode === 'live' ? ' (live view)' : ' (' + Math.round(h) + ' hours ahead)') + '.');
+    lines.push('Wind from ' + compass((k.b + 180) % 360) + ' at about ' + sc.windMph + ' mph. Lake-effect band centered near ' + nearestTown(k.lat, k.lon).name + '.');
+    lines.push(from ? 'User location: ' + from.name + '.' : 'User location: off.');
+    const ser = seriesFor(a);
+    const trend = [];
+    for (let t = Math.ceil(h); t <= 24; t += 3) trend.push('+' + t + 'h ' + fRate(rateAt(sc, a.lat, a.lon, t)));
+    lines.push('Selected area: ' + a.name + ': ' + fAcc(c.acc) + ' in storm total, ' + fRate(c.rate) + ' in/hr, ' + LEVEL[c.level] + ' risk. Rate trend in/hr: ' + trend.join(', ') + '. Total by +24h: ' + fAcc(accAt(ser, sc, 24)) + ' in.');
+    lines.push('Towns (storm total in, rate in/hr, risk' + (from ? ', miles and direction from user' : '') + '):');
+    for (const r of townRows(h)) lines.push('- ' + r.t.name + ': ' + fAcc(r.acc) + ', ' + fRate(r.rate) + ', ' + LEVEL[r.level] + (from ? ', ' + toMi(kmBetween(from, r.t)).toFixed(1) + ' mi ' + compass(bearing(from, r.t)) : ''));
+    const ref = from || a;
+    const pinLine = p => '- ' + p.name + ': ' + toMi(kmBetween(ref, p)).toFixed(1) + ' mi from ' + (from ? 'user' : ref.name);
+    lines.push('Shelters and warming centers (sample pins):');
+    PINS.filter(p => p.type === 'shelter').forEach(p => lines.push(pinLine(p)));
+    lines.push('Police and government sites (sample pins):');
+    PINS.filter(p => p.type === 'gov').forEach(p => lines.push(pinLine(p)));
+    return lines.join('\n');
+  }
+
+  // Answers straight from the model, used when Claude is not available in this view
+  function localAnswer(q) {
+    const s = q.toLowerCase(), h = state.h, a = currentArea(), from = state.user || a, sc = SC();
+    const advice = lvl => lvl === 'high' ? 'Avoid driving there if you can.' : lvl === 'mod' ? 'Drive slowly and leave extra time.' : 'Roads there should be manageable.';
+    if (/shelter|warm|help|heat|stay|safe place/.test(s)) {
+      const near = PINS.filter(p => p.type === 'shelter').map(p => ({ p, d: kmBetween(from, p) })).sort((x, y) => x.d - y.d).slice(0, 2);
+      return 'Closest to ' + from.name + ': ' + near[0].p.name + ' (' + toMi(near[0].d).toFixed(1) + ' mi) and ' + near[1].p.name + ' (' + toMi(near[1].d).toFixed(1) + ' mi). These are sample pins, so confirm with Erie County before heading out. In an emergency, call 911.';
+    }
+    const town = TOWNS.find(t => s.includes(t.name.toLowerCase().replace(', on', '')));
+    if (town) {
+      const c = conditions(townPlace(town), h);
+      return town.name + ': ' + fAcc(c.acc) + ' in so far, ' + fRate(c.rate) + ' in/hr, ' + LEVEL[c.level].toLowerCase() + ' risk. ' + advice(c.level);
+    }
+    if (/when|ease|stop|end|let up|over/.test(s)) {
+      const now = rateAt(sc, a.lat, a.lon, h);
+      if (now < 0.5) return 'Snow at ' + a.name + ' is already light (' + fRate(now) + ' in/hr).';
+      for (let t = Math.ceil(h) + 1; t <= 24; t++) if (rateAt(sc, a.lat, a.lon, t) < 0.5) return 'At ' + a.name + ', snow drops below half an inch per hour around ' + fmtTime(timeAt(t)) + ' (+' + t + ' h).';
+      return 'Snow at ' + a.name + ' stays at half an inch per hour or more through the next 24 hours.';
+    }
+    const highs = townRows(h).filter(r => r.level === 'high').map(r => r.t.name);
+    if (/drive|road|route|travel|commute/.test(s)) {
+      return highs.length ? 'High-risk areas right now: ' + highs.join(', ') + '. Avoid them or wait for the band to move.' : 'No towns are at high risk right now. Drive carefully anyway.';
+    }
+    const c = conditions(a, h), k = frameAt(sc, h);
+    return a.name + ': ' + fAcc(c.acc) + ' in so far, ' + fRate(c.rate) + ' in/hr, ' + LEVEL[c.level].toLowerCase() + ' risk. The band is centered near ' + nearestTown(k.lat, k.lon).name + '. Ask about a town, a drive, or shelters.';
+  }
+
+  async function submit(q) {
+    q = q.trim(); if (!q || busy) return;
+    input.value = '';
+    addMsg('user', q);
+    const bubble = addMsg('bot pending', 'Thinking…');
+    if (!ask) {
+      bubble.classList.remove('pending'); bubble.textContent = localAnswer(q);
+      if (checked) addMsg('note', 'Answered from the map data. Claude isn’t connected in this view.');
+      return;
+    }
+    setBusy(true); ctl = new AbortController();
+    const convo = [{ role: 'user', content: RULES + '\n\nDATA\n' + aiData() }, ...turns.slice(-8), { role: 'user', content: q }];
+    try {
+      const res = await ask(convo, {
+        modelTier: 'quick', cache: false, signal: ctl.signal,
+        onText: ({ text }) => { bubble.classList.remove('pending'); bubble.textContent = text; msgs.scrollTop = msgs.scrollHeight; },
+      });
+      bubble.classList.remove('pending'); bubble.textContent = res.text;
+      if (res.truncated) addMsg('note', 'Answer cut short. Try a narrower question.');
+      turns.push({ role: 'user', content: q }, { role: 'assistant', content: res.text });
+    } catch (e) {
+      bubble.classList.remove('pending');
+      const code = (e && e.code) || 'upstream_error';
+      if (code === 'cancelled') bubble.textContent = (e && e.text) || 'Stopped.';
+      else if (OFF_CODES.has(code)) { ask = null; setStatus(); bubble.textContent = localAnswer(q); addMsg('note', 'Claude isn’t available here, so this answer comes straight from the map data.'); }
+      else if (code === 'rate_limited') { if (e.text) bubble.textContent = e.text; else bubble.remove(); addMsg('note', 'Too many questions in a short time. Try again in a minute.'); }
+      else if (code === 'refused') { bubble.remove(); addMsg('note', 'Claude couldn’t answer that. Try a question about snow, roads or shelters.'); }
+      else { if (e && e.text) bubble.textContent = e.text; else bubble.remove(); addMsg('note', 'The connection dropped. Send the question again to retry.'); }
+    } finally { setBusy(false); ctl = null; msgs.scrollTop = msgs.scrollHeight; }
+  }
+  $('ask-form').addEventListener('submit', e => { e.preventDefault(); if (busy) { if (ctl) ctl.abort(); return; } submit(input.value); });
+  document.querySelectorAll('#suggest button').forEach(b => b.addEventListener('click', () => submit(b.textContent)));
+
+  /* ---------- start ---------- */
+  renderLocPill();
+  new ResizeObserver(layoutMap).observe(mapWrap);
+  layoutMap();
+  drawOverlay();
+  renderAll();
+})();
+</script>
+
+</body></html>

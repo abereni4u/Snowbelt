@@ -1,0 +1,222 @@
+[
+  {
+    "id": "s1",
+    "type": "warming_center",
+    "name": "Warming center, downtown Buffalo",
+    "lat": 42.9,
+    "lon": -78.86,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "s2",
+    "type": "warming_center",
+    "name": "Warming center, South Buffalo",
+    "lat": 42.842,
+    "lon": -78.818,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "s3",
+    "type": "warming_center",
+    "name": "Warming center, Cheektowaga",
+    "lat": 42.912,
+    "lon": -78.772,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "s4",
+    "type": "warming_center",
+    "name": "Warming center, Orchard Park",
+    "lat": 42.775,
+    "lon": -78.752,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "s5",
+    "type": "warming_center",
+    "name": "Warming center, Hamburg",
+    "lat": 42.722,
+    "lon": -78.845,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "s6",
+    "type": "shelter",
+    "name": "Emergency shelter, Amherst",
+    "lat": 42.962,
+    "lon": -78.79,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "s7",
+    "type": "shelter",
+    "name": "Emergency shelter, West Seneca",
+    "lat": 42.866,
+    "lon": -78.8,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "s8",
+    "type": "shelter",
+    "name": "Emergency shelter, Lackawanna",
+    "lat": 42.818,
+    "lon": -78.838,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "s9",
+    "type": "warming_center",
+    "name": "Warming center, Tonawanda",
+    "lat": 43.028,
+    "lon": -78.875,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "s10",
+    "type": "shelter",
+    "name": "Emergency shelter, East Aurora",
+    "lat": 42.76,
+    "lon": -78.625,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "s11",
+    "type": "warming_center",
+    "name": "Warming center, Lancaster",
+    "lat": 42.908,
+    "lon": -78.685,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "g1",
+    "type": "government",
+    "name": "Buffalo City Hall",
+    "lat": 42.8865,
+    "lon": -78.8784,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "g2",
+    "type": "police",
+    "name": "Police, Amherst",
+    "lat": 42.995,
+    "lon": -78.815,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "g3",
+    "type": "police",
+    "name": "Police, Cheektowaga",
+    "lat": 42.895,
+    "lon": -78.74,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "g4",
+    "type": "police",
+    "name": "Police, Orchard Park",
+    "lat": 42.778,
+    "lon": -78.728,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "g5",
+    "type": "police",
+    "name": "Police, Hamburg",
+    "lat": 42.703,
+    "lon": -78.84,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "g6",
+    "type": "police",
+    "name": "Police, West Seneca",
+    "lat": 42.835,
+    "lon": -78.785,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "g7",
+    "type": "police",
+    "name": "Police, Tonawanda",
+    "lat": 43.005,
+    "lon": -78.9,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "g8",
+    "type": "government",
+    "name": "Fire hall, Lackawanna",
+    "lat": 42.808,
+    "lon": -78.815,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  },
+  {
+    "id": "g9",
+    "type": "police",
+    "name": "Police, Lancaster",
+    "lat": 42.888,
+    "lon": -78.672,
+    "hours": "",
+    "phone": "",
+    "source_url": "",
+    "sample": true
+  }
+]

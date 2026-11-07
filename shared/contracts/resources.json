@@ -1,0 +1,29 @@
+{
+  "_about": "GET /api/resources?lat=&lon=&type=warming_center|shelter|police|government&limit=",
+  "example": [
+    {
+      "id": "g2",
+      "type": "police",
+      "name": "Police, Amherst",
+      "lat": 42.995,
+      "lon": -78.815,
+      "hours": "",
+      "phone": "",
+      "source_url": "",
+      "sample": true,
+      "distance_mi": 1.4
+    },
+    {
+      "id": "s6",
+      "type": "shelter",
+      "name": "Emergency shelter, Amherst",
+      "lat": 42.962,
+      "lon": -78.79,
+      "hours": "",
+      "phone": "",
+      "source_url": "",
+      "sample": true,
+      "distance_mi": 2.7
+    }
+  ]
+}

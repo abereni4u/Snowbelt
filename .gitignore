@@ -1,0 +1,25 @@
+# secrets: never commit these
+.env
+.env.local
+*.env
+!.env.example
+*service-account*.json
+*firebase-adminsdk*.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+
+# OS / editors
+.DS_Store
+*~
+\#*\#
+.idea/
+.vscode/
+*.tsbuildinfo
