@@ -1,7 +1,7 @@
 // Map (Role 3). OpenStreetMap tiles, the smooth snowfall layer from /api/risk, help pins, you, and the selected spot.
-import { CircleMarker, MapContainer, TileLayer, Tooltip, useMapEvents } from 'react-leaflet'
+import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMapEvents } from 'react-leaflet'
 import type { LatLngBoundsExpression } from 'leaflet'
-import type { Place, Resource, RiskGrid } from '../types'
+import type { Place, Resource, RiskGrid, RoutePlan } from '../types'
 import SnowLayer, { SNOW_STOPS } from './SnowLayer'
 
 // The eight Western New York counties; matches BOUNDS in backend/app/services/snowModel.py
@@ -17,6 +17,8 @@ const PIN_COLOR: Record<Resource['type'], string> = {
   government: '#1d4ed8',
 }
 
+const toLatLng = (points: [number, number][]): [number, number][] => points.map(([lon, lat]) => [lat, lon])
+
 function ClickToSelect({ onPick }: { onPick: (place: Place) => void }) {
   useMapEvents({
     click: (event) => onPick({ name: 'Selected spot', lat: event.latlng.lat, lon: event.latlng.lng }),
@@ -29,10 +31,11 @@ interface Props {
   resources: Resource[]
   userLocation: Place
   selected: Place | null
+  route: RoutePlan | null
   onPick: (place: Place) => void
 }
 
-export default function MapView({ grid, resources, userLocation, selected, onPick }: Props) {
+export default function MapView({ grid, resources, userLocation, selected, route, onPick }: Props) {
   return (
     <div className="map-wrap">
       <MapContainer bounds={WNY_BOUNDS} className="map" scrollWheelZoom>
@@ -41,6 +44,24 @@ export default function MapView({ grid, resources, userLocation, selected, onPic
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <SnowLayer grid={grid} />
+        {route && (
+          <>
+            <Polyline
+              positions={toLatLng(route.fastest.geometry.coordinates)}
+              pathOptions={route.safer ? { color: '#14212b', weight: 4, opacity: 0.6, dashArray: '6 8' } : { color: '#14212b', weight: 5, opacity: 0.85 }}
+            >
+              <Tooltip sticky>Fastest: {route.fastest.minutes} min</Tooltip>
+            </Polyline>
+            {route.safer && (
+              <Polyline positions={toLatLng(route.safer.geometry.coordinates)} pathOptions={{ color: '#13804c', weight: 6, opacity: 0.9 }}>
+                <Tooltip sticky>Safer: {route.safer.minutes} min</Tooltip>
+              </Polyline>
+            )}
+            {[...route.fastest.red_stretches, ...(route.safer?.red_stretches ?? [])].map((stretch, index) => (
+              <Polyline key={index} positions={toLatLng(stretch)} pathOptions={{ color: '#d23c3c', weight: 6, opacity: 0.9 }} />
+            ))}
+          </>
+        )}
         {resources.map((resource) => (
           <CircleMarker
             key={resource.id}

@@ -1,6 +1,6 @@
 // One place for every backend call, so the URLs and shapes stay in sync with shared/contracts/.
 import type {
-  AreaRow, ChatMessage, ChatReply, Conditions, Contact, DataMode, HelpKind, NotifyResult, NwsAlert, Resource, RiskGrid,
+  AreaRow, ChatMessage, ChatReply, Conditions, Contact, DataMode, HelpKind, NotifyResult, NwsAlert, Place, Resource, RiskGrid, RoutePlan,
 } from './types'
 
 const BASE = import.meta.env.VITE_API_BASE ?? ''
@@ -38,6 +38,9 @@ export const api = {
   resources: (lat: number, lon: number) => request<Resource[]>(`/api/resources?lat=${lat}&lon=${lon}&limit=50`),
 
   alerts: () => request<NwsAlert[]>('/api/alerts'),
+
+  route: (from: Place, to: Place, hoursAhead: number, mode: DataMode) =>
+    request<RoutePlan>('/api/route', postJson({ from: [from.lon, from.lat], to: [to.lon, to.lat], hours_ahead: hoursAhead, mode })),
 
   chat: (messages: ChatMessage[], lat: number | null, lon: number | null, hoursAhead: number, mode: DataMode) =>
     request<ChatReply>('/api/chat', postJson({ messages, lat, lon, hours_ahead: hoursAhead, mode })),
