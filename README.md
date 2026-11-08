@@ -8,60 +8,77 @@ Built at UB Hacking 2026 for the Gemini track.
 
 ## What works now
 
-Everything runs today on **sample data**, and every outside service is optional: a missing key falls back to sample data or a dry run instead of crashing.
+Snowbelt runs on **live data** wherever a key is set, and every outside service stays optional: a missing key or a failed call falls back to sample data or a dry run instead of crashing. `GET /api/health` shows which services are connected.
 
 | Piece | Status now | Next step |
 | --- | --- | --- |
-| Smooth snowfall map over all of Western NY, Live/Future slider, 2022 replay | Works on a sample storm model | Wire live NWS data |
+| Snowfall map: NWS forecast sampled at every town and blended, drawn as outlined 1-3", 3-6", ... bands; hover any spot for exact inches and in/hr | Live by default (`USE_LIVE_NWS=true`). Falls back to the sample storm if NWS is down. The Dec 2022 replay stays available | — |
+| Live/Future slider (past 12 hours to 24 hours ahead) and the 2022 replay | Works | — |
 | Location search (town or county drives the whole page) | Works | — |
-| Area conditions + "Areas with high risk" list | Works | Dial gauges from `docs/ui-prototype.html` |
-| Gemini assistant with 7 tools | Works once `GEMINI_API_KEY` is set | Handle an overloaded model, test 10 real questions |
-| Storm readiness checklist (Have/Need, "Safe" status, "Ask Gemini how to get these") | Works, saved on the device only | Let emergency contacts see "Safe" |
-| Route panel: fastest vs. safer, drawn on the map | Straight-line mock without a working `ORS_API_KEY` | Fix the key, fall back to the mock when the call fails |
-| Nearest shelters & community centers | Works on sample listings, all show "Call ahead" | Verified listings with hours, which show "Open" |
-| Sign-in, emergency contacts, neighbor help board | Code done, needs a Firebase project | Create the project, publish the rules |
-| Email + SMS help alerts | Dry run (logs only) | Gmail app password, Twilio |
-| NWS alerts banner | Live for all eight WNY counties (no key needed) | — |
+| Area conditions + "Areas with high risk" list (first 6, "Show all") | Works | Dial gauges from `docs/ui-prototype.html` |
+| Gemini assistant with 7 tools | Works once `GEMINI_API_KEY` is set. If a model is overloaded (503), it tries a backup model, then says "Gemini is busy" | Test 10 real questions |
+| Route panel: fastest vs. safer, drawn on the map | Real roads from openrouteservice. Straight-line estimates without a key or when the call fails | — |
+| Map pins: hover or tap for type, distance in km, status, address, phone, website and listed capacity | Works | — |
+| Shelters & community centers | Buffalo City Mission (Code Blue) shelters, Buffalo City Hall and 8 Erie County police departments are verified with sources. The rest are still marked Sample | Verify the remaining warming centers |
+| Sign-in with Google, profiles, emergency contacts | Works (Firebase project `snowbelt-2adb2`) | — |
+| Storm readiness checklist | Saved to the profile. All Have: "Tell my contacts I'm safe". Items marked Need have three options: **request from my circle** (emails/texts your emergency contacts the list), **request from the volunteer hub** (one supplies request on the neighbor board), or **ask Gemini** which shelters could help and how safe the drive is | — |
+| Ask for help + neighbor board | Priority order, "I can help" with an ETA, live "on the way" status, 10-minute escalation to the nearest shelter and 2-1-1, rate the helper afterwards | — |
+| Volunteer hub | Sign up with skills; ratings come only from people helped; report a volunteer. Volunteers whose skills fit your readiness list come first. No ID check yet, so nothing says "verified" | — |
+| Email + SMS alerts | Email sends once `SMTP_*` is set. SMS is a dry run | Twilio (optional) |
+| NWS alerts banner and storm warning ping | Live for all eight WNY counties (no key needed) | — |
+| Sticky header with section links | Works on desktop and phones | — |
 
 ## Next steps
 
 Pull `main` before you start, then work on a `role<N>/<task>` branch as usual.
 
-**Before anything else (AJ):** merge `lead/wny-smooth-map`, then `lead/checklist-route-search`. Everyone else then switches to `main` and runs `git pull`.
-
-**If the assistant hangs:** `gemini-3.8-flash` is returning "503 high demand" right now. Set `GEMINI_MODEL=gemini-3.6-flash` in `backend/.env` and restart the backend. `gemini-3.5-flash` also works.
+**If the assistant hangs:** set `GEMINI_MODEL=gemini-3.6-flash` in `backend/.env` and restart the backend. `gemini-3.5-flash` also works.
 
 **Role 1: Gemini assistant**
-- [ ] When Gemini returns 503 or times out, reply "Gemini is busy, try again in a minute" within about 15 seconds instead of hanging.
+- [x] When Gemini returns 503 or times out, fall back to another model, then reply "Gemini is busy" instead of hanging.
 - [ ] Mark a few checklist items as Need and press "Ask Gemini how to get these". Make sure the answer names real nearby resources and mentions 2-1-1, and never invents stores or phone numbers.
 - [ ] Write 10 test questions (drive, shelter, stuck, "wait or go now?") and fix bad answers.
 - [ ] Optional: a "compare to past storms" tool (2014 Snowvember, Dec 2022 blizzard).
 
 **Role 2: Weather data + routes**
-- [ ] openrouteservice rejects our key (403). Get a working key, or leave `ORS_API_KEY` blank for the straight-line mock.
-- [ ] In `routing.py`, fall back to the straight-line mock when the openrouteservice call fails, instead of returning a 502. The route panel currently shows an error.
+- [x] Live NWS snowfall, on by default, with the sample storm as the fallback.
+- [x] Real routes from openrouteservice, with the straight-line mock when the call fails.
 - [ ] Tune risk thresholds on the Dec 2022 replay so East Buffalo, Cheektowaga and Lackawanna light up the way they did.
-- [x] Live NWS snowfall: on by default, sampled at every town and blended. Falls back to the sample storm if NWS is down or `USE_LIVE_NWS=false`.
-- [ ] Deploy the backend.
+- [ ] Deploy the backend (see Deploying below).
 
 **Role 3: Frontend + map**
-- [ ] Check the new panels (search, readiness, routes, shelters) on desktop and phone widths, and fix the layout.
-- [ ] Optional, in this order: a "regions to avoid" map layer from the high-risk cells, a radar-style close-up around the searched place with mile rings, header nav.
-- [ ] Deploy the frontend.
+- [x] Sticky header nav, two-column desktop layout, phone layout.
+- [x] Snowfall bands with outlines and a hover readout; pin hover cards.
+- [ ] Optional: a "regions to avoid" map layer from the high-risk cells, a radar-style close-up around the searched place with mile rings.
+- [ ] Deploy the frontend (see Deploying below).
 
 **Role 4: Community + alerts**
-- [x] Verified Buffalo City Mission shelters and Erie County police departments (address, phone, website, `source_url`). Map pins show them on hover.
+- [x] Verified Buffalo City Mission shelters and Erie County police departments (address, phone, website, `source_url`).
 - [ ] Replace the remaining sample warming centers and shelters with verified ones. Each needs a `source_url` and drops `"sample": true`. Listings with "24/7" hours show a green "Open" badge.
-- [x] "On my way, ETA 15 min" on help requests, priority order, 10-minute escalation to the nearest shelter and 2-1-1, and rating the helper afterwards.
-- [ ] **Publish the updated `firebase/firestore.rules`** (new: volunteers, ratings, reports, ETA on claims). Without this, the volunteer hub and ratings get "permission denied".
-- [ ] Send real email alerts: set `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD` in `backend/.env` (a Gmail app password works). Until then alerts show "Not sent".
-- [x] Readiness checklist saves to the profile, and "Tell my contacts I'm safe" sends a real update.
-- [x] Volunteer hub: sign up with skills, ratings from people helped, reports. No ID check yet, so nothing says "verified".
+- [x] ETA on claims, priority order, escalation, ratings, volunteer hub, readiness saved to the profile, "I'm safe" updates, volunteer requests from the readiness list.
+- [ ] Make sure the latest `firebase/firestore.rules` is published (Firebase console > Firestore > Rules). Without it the volunteer hub and ratings get "permission denied".
+- [ ] Optional: Twilio for SMS.
 
 **Everyone**
 - [ ] Pick one name, Snowbelt or Cold Path, before the video and Devpost.
-- [ ] Rehearse the demo: replay Dec 2022 → search "East Buffalo" → fill the checklist → Gemini suggests how to get missing items → safer route to a shelter → post "no food" and someone claims it → ranked risk list → `/docs` as the open API.
+- [ ] Rehearse the demo: replay Dec 2022 → search "East Buffalo" → hover the snow bands and a shelter pin → fill the checklist → request the missing items from your circle or the volunteer hub, or ask Gemini about shelters → safer route to a shelter → a volunteer claims the request with an ETA → rate them → ranked risk list → `/docs` as the open API.
 - [ ] Run `pytest` and `npm run build` before every push.
+
+### Test volunteers
+
+To give the volunteer hub something to show, add five clearly marked test volunteers with ratings (each shows a "Test" chip). This uses the backend's `FIREBASE_CREDENTIALS`:
+
+```bash
+cd backend && source .venv/bin/activate
+python -m scripts.seedTestVolunteers            # add or refresh them
+python -m scripts.seedTestVolunteers --remove   # delete them before the public demo
+```
+
+### Deploying
+
+Not set up yet. The recommended path is **Firebase Hosting for the frontend and Google Cloud Run for the backend**, both in the `snowbelt-2adb2` project. Hosting can forward `/api` to Cloud Run on the same domain, so there is no CORS or API URL to configure, and `snowbelt-2adb2.web.app` is already allowed for Google sign-in. It needs the project on the pay-as-you-go plan (a hackathon's traffic stays in the free tier).
+
+Without a card: GitHub Pages for the frontend (build with `VITE_API_BASE` pointing at the backend) and Hugging Face Spaces (Docker) for the backend. Either way, set `FRONTEND_ORIGINS` on the backend to the site's address and add that domain under Firebase console > Authentication > Settings > Authorized domains.
 
 `docs/ui-prototype.html` is the clickable design from the whiteboard sketch. Open it in a browser for the look we're aiming for.
 
@@ -128,7 +145,7 @@ Share keys in the team chat, never in the repo. `.env` and `.env.local` are git-
 | What | Who | Where | Goes in |
 | --- | --- | --- | --- |
 | Gemini API key | Role 1 | https://aistudio.google.com/apikey | `backend/.env` `GEMINI_API_KEY` |
-| Firebase project | Role 4 | https://console.firebase.google.com: turn on Authentication (Google provider) and Firestore, add a Web app | Web config in `frontend/.env.local`; service-account JSON path in `backend/.env` `FIREBASE_CREDENTIALS`; paste `firebase/firestore.rules` into the Rules tab |
+| Firebase project (done: `snowbelt-2adb2`) | Role 4 | https://console.firebase.google.com: Authentication (Google provider) and Firestore are on; ask AJ for the web config and service account | Web config in `frontend/.env.local`; service-account JSON path in `backend/.env` `FIREBASE_CREDENTIALS`; paste `firebase/firestore.rules` into the Rules tab |
 | openrouteservice key | Role 2 | https://openrouteservice.org (free) | `backend/.env` `ORS_API_KEY` |
 | Email | Role 4 | A Gmail account with an app password | `SMTP_*` and `EMAIL_FROM` in `backend/.env` |
 | SMS | Role 4 | https://www.twilio.com (trial) | `TWILIO_*` in `backend/.env` |
@@ -146,8 +163,8 @@ Example requests and responses for every endpoint are in `shared/contracts/`. If
 | `GET /api/areas?hours_ahead&mode` | 2 | Every town, worst first |
 | `GET /api/alerts` | 2 | Live NWS alerts for all eight Western New York counties |
 | `POST /api/route` | 2 | Fastest and safer routes, each with a risk level |
-| `GET /api/resources?lat&lon&type` | 4 | Nearest warming centers, shelters, police and government sites |
-| `POST /api/help/notify` | 4 | Emails/texts the signed-in user's emergency contacts |
+| `GET /api/resources?lat&lon&type` | 4 | Nearest warming centers, shelters, police and government sites, with address, phone, website and capacity when known |
+| `POST /api/help/notify` | 4 | Emails/texts the signed-in user's emergency contacts (a help request, or "I'm safe") |
 | `POST /api/chat` | 1 | Gemini's reply, the tools it called, and an optional help-request draft |
 | `GET /api/health` | — | Which services are configured |
 
@@ -177,5 +194,8 @@ Gemini never sends an alert by itself. `draftHelpRequest` fills in the help form
 
 - National Weather Service API (forecasts, alerts): https://www.weather.gov/documentation/services-web-api
 - openrouteservice (routing): https://openrouteservice.org
-- OpenStreetMap (map tiles): https://www.openstreetmap.org/copyright
+- OpenStreetMap (map tiles, Buffalo City Hall): https://www.openstreetmap.org/copyright
+- Code Blue shelters: https://www4.erie.gov/exec/press/wny-coalition-homeless-announces-code-blue-25-26-season and https://www.buffalocitymission.org/contact
+- Erie County police contacts: https://www3.erie.gov/dhses/local-police-and-fire-contacts-erie-county-ny
+- Every verified listing in `backend/app/data/resources.json` has its own `source_url`.
 - Planned: Open-Meteo historical weather for real replay data, NOHRSC snowfall analysis for checking the model.

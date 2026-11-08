@@ -195,6 +195,12 @@ html { scroll-padding-top: 84px; }
 .have-need button[aria-pressed='true'] { background: var(--ok); border-color: transparent; color: var(--ok-ink); }
 .have-need button.need[aria-pressed='true'] { background: var(--risk-med); color: var(--on-med); }
 .ready-foot { margin: 0; padding: 10px 16px 12px; border-top: 1px solid var(--line); }
+.get-foot > p { margin: 0 0 6px; }
+.get-foot > p:last-child { margin-bottom: 0; }
+.get-options { display: grid; gap: 8px; margin-bottom: 8px; }
+.get-option { display: grid; grid-template-columns: 210px minmax(0, 1fr); align-items: center; gap: 4px 12px; }
+.get-option .btn { width: 100%; }
+@media (max-width: 600px) { .get-option { grid-template-columns: 1fr; } }
 
 /* routing */
 .route-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }

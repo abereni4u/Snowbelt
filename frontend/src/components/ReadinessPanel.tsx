@@ -3,8 +3,10 @@
 // grounded in the same tools as the chat (nearby resources, conditions, alerts).
 // Answers are saved on this device, and on the person's profile when they're signed in. Once
 // everything is Have, they can send their emergency contacts an "I'm safe" message.
-// Items still needed can go to the neighbor board as one supplies request for volunteers to pick up,
-// and the volunteer hub puts volunteers whose skills fit those items first.
+// Items still needed can be requested three ways: from the person's circle (their emergency contacts,
+// by email/text), from the volunteer hub (one supplies request on the neighbor board, and the hub puts
+// volunteers whose skills fit first), or by asking Gemini which shelters might have them and how safe
+// the drive is.
 import { useEffect, useRef, useState } from 'react'
 import type { User } from 'firebase/auth'
 import { addDoc, collection, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore'
@@ -60,6 +62,8 @@ export default function ReadinessPanel({ place, user, onAsk, onNeedsChange }: Pr
   const [request, setRequest] = useState<SupplyRequest | null>(null)
   const [posting, setPosting] = useState(false)
   const [requestError, setRequestError] = useState('')
+  const [circleSending, setCircleSending] = useState(false)
+  const [circleNote, setCircleNote] = useState('')
 
   // Signing in brings back the checklist saved on the profile (answers on this device win)
   useEffect(() => {
@@ -141,11 +145,38 @@ export default function ReadinessPanel({ place, user, onAsk, onNeedsChange }: Pr
     }
   }
 
+  const supplyNote = `Getting ready for the storm. Still need: ${neededLabels.join(', ').toLowerCase()}.`
+
+  async function askCircle() {
+    if (!db || !user) return
+    setCircleSending(true)
+    setCircleNote('')
+    try {
+      const contacts = ((await getDoc(doc(db, 'users', user.uid))).data()?.contacts ?? []) as Contact[]
+      if (contacts.length === 0) {
+        setCircleNote('Add your emergency contacts under "Ask for help" first.')
+        return
+      }
+      const { results } = await api.notify(
+        { kind: 'supplies', note: supplyNote, lat: place.lat, lon: place.lon, display_name: user.displayName ?? '', contacts },
+        await user.getIdToken(),
+      )
+      const sent = results.filter((result: NotifyResult) => result.status === 'sent').length
+      setCircleNote(sent > 0
+        ? `Sent your list to ${sent} of ${results.length} contact channels.`
+        : "Nothing was sent: the server's email/SMS isn't set up yet.")
+    } catch (caught) {
+      setCircleNote(caught instanceof Error ? caught.message : 'Could not send. Try again.')
+    } finally {
+      setCircleSending(false)
+    }
+  }
+
   async function requestSupplies() {
     if (!db || !user) return
     setPosting(true)
     setRequestError('')
-    const note = `Getting ready for the storm. Still need: ${neededLabels.join(', ').toLowerCase()}.`
+    const note = supplyNote
     try {
       if (request?.status === 'open') {
         await updateDoc(doc(db, 'helpRequests', request.id), { items: neededLabels, note })
@@ -175,7 +206,7 @@ export default function ReadinessPanel({ place, user, onAsk, onNeedsChange }: Pr
 
   function askGemini() {
     const list = needed.map((item) => item.label.toLowerCase()).join(', ')
-    onAsk(`A storm is coming and I still need: ${list}. How can I get these near ${place.name} before the roads get bad?`)
+    onAsk(`A storm is coming and I still need: ${list}. Which shelters or warming centers near ${place.name} could help with these, and is the drive there safe right now? Don't guess what they stock; tell me to call ahead.`)
   }
 
   return (
@@ -212,21 +243,38 @@ export default function ReadinessPanel({ place, user, onAsk, onNeedsChange }: Pr
         </div>
       )}
       {needed.length > 0 && (
-        <div className="ready-foot">
-          <div className="community-actions">
-            {user && !request && (
-              <button className="btn primary" onClick={requestSupplies} disabled={posting}>
-                {posting ? 'Posting…' : `Ask a volunteer to bring ${needed.length === 1 ? 'it' : 'these'}`}
-              </button>
+        <div className="ready-foot get-foot">
+          <p className="small"><b>Get the {needed.length === 1 ? 'item' : `${needed.length} items`} you still need</b></p>
+          <div className="get-options">
+            {user && (
+              <div className="get-option">
+                <button className="btn primary" onClick={askCircle} disabled={circleSending}>{circleSending ? 'Sending…' : 'Request from my circle'}</button>
+                <span className="small muted">Emails or texts your emergency contacts the list.</span>
+              </div>
             )}
-            {requestOutdated && (
-              <button className="btn primary" onClick={requestSupplies} disabled={posting}>{posting ? 'Updating…' : 'Update my request'}</button>
+            {user && (
+              <div className="get-option">
+                {request ? (
+                  requestOutdated ? (
+                    <button className="btn primary" onClick={requestSupplies} disabled={posting}>{posting ? 'Updating…' : 'Update my request'}</button>
+                  ) : (
+                    <button className="btn" onClick={scrollToCommunity}>See my request</button>
+                  )
+                ) : (
+                  <button className="btn primary" onClick={requestSupplies} disabled={posting}>{posting ? 'Posting…' : 'Request from volunteer hub'}</button>
+                )}
+                <span className="small muted">Posts to the neighbor board. Volunteers who have these skills are listed first.</span>
+              </div>
             )}
-            <button className={user && !request ? 'btn' : 'btn primary'} onClick={askGemini}>Ask Gemini how to get {needed.length === 1 ? 'it' : `these ${needed.length}`}</button>
+            <div className="get-option">
+              <button className="btn primary" onClick={askGemini}>Ask Gemini: shelters & routes</button>
+              <span className="small muted">Which shelters nearby could help, and how safe the drive there is.</span>
+            </div>
           </div>
-          {!user && firebaseReady && <p className="small muted">Sign in to ask a volunteer to bring what you need.</p>}
-          {user && !request && <p className="small muted">Posts to the neighbor board for volunteers. Not for emergencies: if anyone's life may be in danger, <a href="tel:911">call 911</a> first.</p>}
+          {!user && firebaseReady && <p className="small muted">Sign in to request these from your circle or the volunteer hub.</p>}
+          {circleNote && <p className="small">{circleNote}</p>}
           {requestError && <p className="small">{requestError}</p>}
+          {user && <p className="small muted">Not for emergencies: if anyone's life may be in danger, <a href="tel:911">call 911</a> first.</p>}
         </div>
       )}
       {request && (
