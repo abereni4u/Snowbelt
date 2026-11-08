@@ -9,11 +9,11 @@ The routine is the same every time: **update main → make a branch → commit �
 Accept the repo invite from your email or https://github.com/notifications first. Then:
 
 ```bash
-git clone https://github.com/abereni4u/Snowbelt_UBHacking2026.git
-cd Snowbelt_UBHacking2026
+git clone https://github.com/abereni4u/Snowbelt.git
+cd Snowbelt
 ```
 
-(If you have an SSH key on GitHub, `git@github.com:abereni4u/Snowbelt_UBHacking2026.git` works too.)
+(If you have an SSH key on GitHub, `git@github.com:abereni4u/Snowbelt.git` works too.)
 
 Then follow "Run it locally" in the README.
 

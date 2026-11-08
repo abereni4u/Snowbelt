@@ -76,7 +76,7 @@ python -m scripts.seedTestVolunteers --remove   # delete them before the public 
 
 ### Deploying
 
-- **Frontend:** GitHub Pages at https://abereni4u.github.io/Snowbelt_UBHacking2026/. `.github/workflows/deploy-pages.yml` builds and publishes it on every push to `main`.
+- **Frontend:** GitHub Pages at https://abereni4u.github.io/Snowbelt/. `.github/workflows/deploy-pages.yml` builds and publishes it on every push to `main`.
 - **Backend:** Render's free plan, from `render.yaml`. It sleeps after 15 minutes idle; the next visit wakes it in about a minute, and the page says so while it waits.
 - **Email/SMS:** left off on purpose in the hosted version, so public visitors only get dry-run alerts.
 
