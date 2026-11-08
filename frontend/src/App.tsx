@@ -57,6 +57,7 @@ export default function App() {
   const [alerts, setAlerts] = useState<NwsAlert[]>([])
   const [user, setUser] = useState<User | null>(null)
   const [helpDraft, setHelpDraft] = useState<HelpDraft | null>(null)
+  const [readinessNeeds, setReadinessNeeds] = useState<string[]>([])
   const [chatQuestion, setChatQuestion] = useState('')
   const [routePlan, setRoutePlan] = useState<RoutePlan | null>(null)
   const [userNow, setUserNow] = useState<Conditions | null>(null)
@@ -190,7 +191,7 @@ export default function App() {
             <TimeControl hoursAhead={hoursAhead} onHoursChange={setHoursAhead} dataMode={dataMode} onDataModeChange={setDataMode} />
           </section>
           <RoutePanel origin={userLocation} resources={resources} areas={areas} hoursAhead={hoursAhead} dataMode={dataMode} onPlan={setRoutePlan} />
-          <ReadinessPanel place={userLocation} user={user} onAsk={setChatQuestion} />
+          <ReadinessPanel place={userLocation} user={user} onAsk={setChatQuestion} onNeedsChange={setReadinessNeeds} />
           <HelpPanel user={user} userLocation={userLocation} resources={resources} draft={helpDraft} onDraftUsed={() => setHelpDraft(null)} onAskGemini={setChatQuestion} />
         </div>
 
@@ -200,7 +201,7 @@ export default function App() {
           <ChatPanel userLocation={userLocation} hoursAhead={hoursAhead} dataMode={dataMode} onHelpDraft={setHelpDraft} question={chatQuestion} onQuestionUsed={() => setChatQuestion('')} />
           <ShelterList resources={resources} onPick={setSelected} />
           <RiskList areas={areas} hoursAhead={hoursAhead} onPick={(row) => setSelected({ name: row.town, lat: row.lat, lon: row.lon })} />
-          <VolunteerHub user={user} userLocation={userLocation} />
+          <VolunteerHub user={user} userLocation={userLocation} needs={readinessNeeds} />
         </div>
       </main>
     </div>
