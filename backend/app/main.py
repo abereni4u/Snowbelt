@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import settings
 from app.routers import chat, community, routing, weather
+from app.services import firebaseAuth
 
 logging.basicConfig(level=logging.INFO)
 
@@ -38,7 +39,7 @@ def getHealth():
         gemini_model=settings.geminiModel,
         live_nws=settings.useLiveNws,
         routing=(settings.orsApiKey != ""),
-        firebase=(settings.firebaseCredentialsPath != ""),
+        firebase=(firebaseAuth.firebaseApp is not None),
         email=(settings.smtpHost != ""),
         sms=(settings.twilioAccountSid != ""),
     )

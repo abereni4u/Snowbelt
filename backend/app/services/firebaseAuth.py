@@ -7,6 +7,10 @@ The frontend signs people in with Firebase Auth and sends the ID token as
 Without FIREBASE_CREDENTIALS (a service-account JSON path) the backend runs in dev mode:
 every request is treated as user "dev-user" so the team can test before Firebase is set up.
 Never demo the help alerts publicly in dev mode.
+
+If FIREBASE_CREDENTIALS is set but the file can't be loaded (for example the hosting secret file
+isn't added yet), the backend still starts, but signed-in endpoints answer 503 instead of falling
+back to dev mode, so a public deploy never lets anyone send alerts unchecked.
 """
 import logging
 
@@ -16,15 +20,22 @@ from app import settings
 
 logger = logging.getLogger("snowbelt.auth")
 firebaseApp = None
+credentialsBroken = False
 
 if (settings.firebaseCredentialsPath != ""):
     import firebase_admin
     from firebase_admin import credentials
-    firebaseApp = firebase_admin.initialize_app(credentials.Certificate(settings.firebaseCredentialsPath))
+    try:
+        firebaseApp = firebase_admin.initialize_app(credentials.Certificate(settings.firebaseCredentialsPath))
+    except (OSError, ValueError) as error:
+        credentialsBroken = True
+        logger.error("FIREBASE_CREDENTIALS is set but couldn't be loaded (%s). Signed-in features are off.", error)
 
 
 def getCurrentUser(request: Request) -> dict:
     """FastAPI dependency: returns {uid, name, email} or raises 401."""
+    if (credentialsBroken):
+        raise HTTPException(status_code=503, detail="Sign-in checks aren't working on the server right now. Try again later.")
     if (firebaseApp is None):
         logger.warning("FIREBASE_CREDENTIALS not set: accepting request as dev-user")
         return dict(uid="dev-user", name="Dev User", email="")
