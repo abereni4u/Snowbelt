@@ -1,5 +1,5 @@
 // Gemini assistant panel (Role 1). Sends the conversation to /api/chat and shows what Gemini checked.
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import type { ChatMessage, DataMode, HelpDraft, Place, ToolCall } from '../types'
 
@@ -29,14 +29,26 @@ interface Props {
   hoursAhead: number
   dataMode: DataMode
   onHelpDraft: (draft: HelpDraft) => void
+  // A question sent from elsewhere in the app (the readiness checklist); asked once, then cleared
+  question: string
+  onQuestionUsed: () => void
 }
 
-export default function ChatPanel({ userLocation, hoursAhead, dataMode, onHelpDraft }: Props) {
+export default function ChatPanel({ userLocation, hoursAhead, dataMode, onHelpDraft, question, onQuestionUsed }: Props) {
   const [turns, setTurns] = useState<Turn[]>([])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const listRef = useRef<HTMLDivElement>(null)
+  const cardRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    if (!question || busy) return
+    onQuestionUsed()
+    cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    send(question)
+    // send is recreated every render; only a new question should trigger this
+  }, [question, busy])
 
   async function send(text: string) {
     const question = text.trim()
@@ -62,7 +74,7 @@ export default function ChatPanel({ userLocation, hoursAhead, dataMode, onHelpDr
   }
 
   return (
-    <section className="card ai-card">
+    <section className="card ai-card" ref={cardRef}>
       <div className="card-head row-between">
         <h2>AI assistance</h2>
         <span className="muted small">Powered by Gemini</span>

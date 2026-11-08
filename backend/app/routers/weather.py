@@ -12,14 +12,15 @@ router = APIRouter(prefix="/api", tags=["weather"])
 
 
 @lru_cache(maxsize=64)
-def cachedRiskGrid(mode: str, hour: int) -> dict:
-    return snowModel.buildRiskGrid(mode, hour)
+def cachedSnowRaster(mode: str, hour: int) -> dict:
+    return snowModel.buildSnowRaster(mode, hour)
 
 
 @router.get("/risk")
 def getRisk(hours_ahead: int = Query(0, ge=0, le=24), mode: str = Query("live", pattern="^(live|replay)$")):
-    grid = cachedRiskGrid(mode, hours_ahead)
-    return dict(grid, wind=snowModel.getWind(mode, hours_ahead), source="sample")
+    """Snowfall grid for Western New York, as number arrays the map draws as one smooth layer."""
+    raster = cachedSnowRaster(mode, hours_ahead)
+    return dict(raster, wind=snowModel.getWind(mode, hours_ahead), source="sample")
 
 
 @router.get("/conditions")
@@ -45,7 +46,7 @@ def getAreas(hours_ahead: int = Query(0, ge=0, le=24), mode: str = Query("live",
 
 @router.get("/alerts")
 def getAlerts():
-    """Live NWS alerts for Buffalo; an empty list when there are none or NWS is unreachable."""
+    """Live NWS alerts for Western New York; an empty list when there are none or NWS is unreachable."""
     try:
         return nws.fetchActiveAlerts()
     except Exception:

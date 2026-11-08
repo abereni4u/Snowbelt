@@ -1,5 +1,5 @@
 {
-  "_about": "GET /api/alerts. Live NWS alerts for Buffalo; [] when none.",
+  "_about": "GET /api/alerts. Live NWS alerts for Western New York (all eight counties), one entry per alert; [] when none.",
   "example": [
     {
       "event": "Lake Effect Snow Warning",
