@@ -23,6 +23,7 @@ import ReadinessPanel from './components/ReadinessPanel'
 import RoutePanel from './components/RoutePanel'
 import DemoCommunity from './components/DemoCommunity'
 import VolunteerHub from './components/VolunteerHub'
+import Snowfall from './components/Snowfall'
 import ChatPanel from './components/ChatPanel'
 import HelpPanel from './components/HelpPanel'
 
@@ -95,12 +96,23 @@ export default function App() {
 
   return (
     <div className="app">
+      <Snowfall />
       <header className="top">
-        <div className="plaque">
-          <div className="plaque-in">
-            <span className="plaque-name">Snowbelt</span>
-            <span className="plaque-sub">Western New York</span>
-          </div>
+        <div className="brand">
+          <svg className="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+            <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              {[0, 60, 120].map((angle) => (
+                <g key={angle} transform={`rotate(${angle} 16 16)`}>
+                  <path d="M16 3v26" />
+                  <path d="M12.5 6.5 16 9l3.5-2.5M12.5 25.5 16 23l3.5 2.5" />
+                </g>
+              ))}
+            </g>
+          </svg>
+          <span className="brand-text">
+            <span className="brand-name">Snowbelt</span>
+            <span className="brand-sub">Western New York</span>
+          </span>
         </div>
         <nav className="top-nav" aria-label="Sections">
           <button onClick={() => scrollTo('map')}>Map</button>
