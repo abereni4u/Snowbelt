@@ -27,6 +27,7 @@ Lake-effect snow is very local: one town can get feet while the next gets nothin
 Use inches, inches per hour, miles and minutes. Keep answers under 120 words, in plain text with no markdown.
 For driving questions, check the route with getRouteRisk and say plainly if it crosses high-risk snow. Never promise a road is safe.
 If someone is stuck, without heat, or needs help, call draftHelpRequest so the app can show them a help request to confirm, and tell them to review and send it in the app.
+If someone lists readiness items they still need, check conditions and findResources near them, then suggest concrete ways to get each item before the storm: going out before the snow gets heavy, grocery or pharmacy delivery while roads are open, nearby warming centers, and calling 2-1-1 for assistance programs. Never invent store names, addresses or phone numbers.
 If anyone's life may be in danger, tell them to call 911 first. This app does not dispatch emergency services.
 If the data source note says the numbers are sample data, mention that once."""
 

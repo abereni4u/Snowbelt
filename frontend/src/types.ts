@@ -51,6 +51,23 @@ export interface Resource {
   distance_mi: number
 }
 
+// POST /api/route. Points are [lon, lat] (GeoJSON order). safer is null when no safer route was needed or found.
+export interface RouteOption {
+  geometry: { type: 'LineString'; coordinates: [number, number][] }
+  minutes: number
+  miles: number
+  level: Level
+  worst_risk: number
+  red_stretches: [number, number][][]
+}
+
+export interface RoutePlan {
+  fastest: RouteOption
+  safer: RouteOption | null
+  source: string
+  note?: string
+}
+
 export interface NwsAlert {
   event: string
   headline: string

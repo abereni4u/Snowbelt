@@ -55,10 +55,10 @@ h3 { font: 700 13px/1.2 var(--f-display); margin: 0 0 8px; text-transform: upper
 .error-bar { background: var(--surface); border: 1px dashed var(--risk-high); }
 
 /* layout */
-.grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); grid-template-areas: 'map' 'area' 'shelters' 'list' 'ai' 'help'; align-items: start; }
-.map-card { grid-area: map; } .area-card { grid-area: area; } .list-card { grid-area: list; } .ai-card { grid-area: ai; } .help-card { grid-area: help; } .shelter-card { grid-area: shelters; }
+.grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); grid-template-areas: 'map' 'area' 'ready' 'shelters' 'route' 'list' 'ai' 'help'; align-items: start; }
+.map-card { grid-area: map; } .area-card { grid-area: area; } .list-card { grid-area: list; } .ai-card { grid-area: ai; } .help-card { grid-area: help; } .shelter-card { grid-area: shelters; } .ready-card { grid-area: ready; } .route-card { grid-area: route; }
 @media (min-width: 920px) {
-  .grid { grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr); grid-template-areas: 'map area' 'map ai' 'shelters ai' 'list ai' 'help help'; }
+  .grid { grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr); grid-template-areas: 'map area' 'map ai' 'route ai' 'ready shelters' 'ready list' 'help help'; }
   .ai-card { align-self: stretch; }
 }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; min-width: 0; }
@@ -117,6 +117,37 @@ h3 { font: 700 13px/1.2 var(--f-display); margin: 0 0 8px; text-transform: upper
 .shelter-row .chip { grid-column: 3; grid-row: 1; }
 .shelter-dist { grid-column: 2; grid-row: 1; }
 .shelter-note { margin: 0; padding: 10px 16px 12px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+
+/* location search */
+.search { display: flex; flex-direction: column; gap: 6px; }
+.search-form { display: flex; gap: 8px; }
+.search-form input { flex: 1; min-width: 0; padding: 11px 14px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); }
+.search-form .btn { border-radius: 10px; padding-inline: 18px; }
+.search-msg { margin: 0; font-size: 13px; color: var(--muted); }
+
+/* readiness */
+.ready-card { padding-bottom: 4px; }
+.ready-card .sub { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.ready-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 16px; border-top: 1px solid var(--line); }
+.have-need { display: inline-flex; gap: 6px; flex: none; }
+.have-need button { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 8px; padding: 6px 10px 5px; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--muted); }
+.have-need button[aria-pressed='true'] { background: var(--sign); border-color: transparent; color: var(--sign-ink); }
+.have-need button.need[aria-pressed='true'] { background: var(--risk-med); color: var(--on-med); }
+.ready-foot { padding: 10px 16px 12px; border-top: 1px solid var(--line); }
+
+/* routing */
+.route-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.route-head select { flex: 1 1 220px; min-width: 0; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface-2); font-weight: 700; }
+.route-body { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 8px; }
+.route-body.busy { opacity: 0.6; }
+.route-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.route-option { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+.route-option.best { border-color: var(--sign); }
+.route-title { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; }
+.route-swatch { width: 16px; height: 4px; border-radius: 2px; background: var(--ink); }
+.route-swatch.safer { background: var(--sign); }
+.route-time { font: 600 22px/1.1 var(--f-data); margin-top: 4px; }
+.route-note { margin: 0; font-size: 12.5px; color: var(--muted); }
 .empty { padding: 12px 16px; margin: 0; color: var(--muted); border-top: 1px solid var(--line); }
 
 /* chat */
