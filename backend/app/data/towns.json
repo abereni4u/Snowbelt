@@ -6,6 +6,12 @@
     "listed": true
   },
   {
+    "name": "East Buffalo",
+    "lat": 42.904,
+    "lon": -78.825,
+    "listed": true
+  },
+  {
     "name": "Lackawanna",
     "lat": 42.825,
     "lon": -78.823,

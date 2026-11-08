@@ -93,14 +93,45 @@ def mockRoute(fromPoint: list, toPoint: list) -> dict:
     return dict(geometry=dict(type="LineString", coordinates=coordinates), minutes=math.ceil(miles / 30 * 60), miles=round(miles, 1))
 
 
+def mockDetour(fromPoint: list, toPoint: list, mode: str, hour: float):
+    """Two straight legs through a waypoint off to one side, picking the side with the least
+    high-risk snow. Returns None when no detour does better than the direct line."""
+    midLon = (fromPoint[0] + toPoint[0]) / 2
+    midLat = (fromPoint[1] + toPoint[1]) / 2
+    # Perpendicular to the trip, scaled to its length
+    perpLon, perpLat = -(toPoint[1] - fromPoint[1]), (toPoint[0] - fromPoint[0])
+    best = None
+    for scale in (0.35, -0.35, 0.6, -0.6):
+        waypoint = [midLon + perpLon * scale, midLat + perpLat * scale]
+        first = mockRoute(fromPoint, waypoint)
+        second = mockRoute(waypoint, toPoint)
+        route = dict(geometry=dict(type="LineString", coordinates=first["geometry"]["coordinates"] + second["geometry"]["coordinates"][1:]),
+                     minutes=first["minutes"] + second["minutes"], miles=round(first["miles"] + second["miles"], 1))
+        route.update(scoreLine(route["geometry"]["coordinates"], mode, hour))
+        if ((best is None) or (route["worst_risk"] < best["worst_risk"])):
+            best = route
+    return best
+
+
+def planMockRoutes(fromPoint: list, toPoint: list, mode: str, hour: float, note: str) -> dict:
+    fastest = mockRoute(fromPoint, toPoint)
+    fastest.update(scoreLine(fastest["geometry"]["coordinates"], mode, hour))
+    safer = None
+    if (fastest["level"] != "low"):
+        detour = mockDetour(fromPoint, toPoint, mode, hour)
+        if ((detour is not None) and (detour["worst_risk"] < fastest["worst_risk"] - 0.05)):
+            safer = detour
+    return dict(fastest=fastest, safer=safer, source="mock", note=note)
+
+
 def planRoutes(fromPoint: list, toPoint: list, mode: str, hour: float) -> dict:
     """Returns {fastest, safer, source, note}; each route carries its own risk score."""
     if (settings.orsApiKey == ""):
-        fastest = mockRoute(fromPoint, toPoint)
-        fastest.update(scoreLine(fastest["geometry"]["coordinates"], mode, hour))
-        return dict(fastest=fastest, safer=None, source="mock",
-                    note="Straight-line mock. Add ORS_API_KEY to backend/.env for real roads.")
-    fastest = requestOrsRoute(fromPoint, toPoint)
+        return planMockRoutes(fromPoint, toPoint, mode, hour, "Straight-line estimate. Add ORS_API_KEY to backend/.env for real roads.")
+    try:
+        fastest = requestOrsRoute(fromPoint, toPoint)
+    except httpx.HTTPError:
+        return planMockRoutes(fromPoint, toPoint, mode, hour, "Road routing is unavailable right now, so these are straight-line estimates.")
     fastest.update(scoreLine(fastest["geometry"]["coordinates"], mode, hour))
     safer = None
     note = ""
@@ -108,6 +139,10 @@ def planRoutes(fromPoint: list, toPoint: list, mode: str, hour: float) -> dict:
         try:
             safer = requestOrsRoute(fromPoint, toPoint, buildAvoidPolygons(mode, hour, fromPoint, toPoint))
             safer.update(scoreLine(safer["geometry"]["coordinates"], mode, hour))
+            # Only offer it when it really avoids more of the snow
+            fewerRed = (len(safer["red_stretches"]) < len(fastest["red_stretches"]))
+            if ((fewerRed == False) and (safer["worst_risk"] > fastest["worst_risk"] - 0.05)):
+                safer = None
         except httpx.HTTPError:
             note = "Could not find a route around the high-risk area."
     return dict(fastest=fastest, safer=safer, source="openrouteservice", note=note)

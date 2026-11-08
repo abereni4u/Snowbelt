@@ -21,10 +21,14 @@ import ShelterList from './components/ShelterList'
 import LocationSearch from './components/LocationSearch'
 import ReadinessPanel from './components/ReadinessPanel'
 import RoutePanel from './components/RoutePanel'
+import DemoCommunity from './components/DemoCommunity'
+import VolunteerHub from './components/VolunteerHub'
 import ChatPanel from './components/ChatPanel'
 import HelpPanel from './components/HelpPanel'
 
 const FALLBACK_LOCATION: Place = { name: 'UB North Campus', lat: 43.001, lon: -78.789 }
+// The demo story: a Lackawanna resident during the Nov 2022 replay, where the heaviest band sat
+const DEMO_LOCATION: Place = { name: 'Lackawanna', lat: 42.825, lon: -78.823 }
 
 export default function App() {
   const [userLocation, setUserLocation] = useState<Place>(FALLBACK_LOCATION)
@@ -39,6 +43,7 @@ export default function App() {
   const [helpDraft, setHelpDraft] = useState<HelpDraft | null>(null)
   const [chatQuestion, setChatQuestion] = useState('')
   const [routePlan, setRoutePlan] = useState<RoutePlan | null>(null)
+  const [stormPing, setStormPing] = useState('')
   const [error, setError] = useState('')
 
   // Browser location, if the user allows it
@@ -75,6 +80,19 @@ export default function App() {
 
   const focusPlace = selected ?? userLocation
 
+  function startDemo() {
+    setDataMode('replay')
+    setHoursAhead(0)
+    setUserLocation(DEMO_LOCATION)
+    setSelected(null)
+    api.conditions(DEMO_LOCATION.lat, DEMO_LOCATION.lon, 0, 'replay')
+      .then((now) => setStormPing(`Heavy lake-effect bands are over ${DEMO_LOCATION.name}: ${now.rate_in_hr.toFixed(1)} in/hr now and ${now.next_6h_in} more inches in the next 6 hours. Finish your readiness checklist before the roads close.`))
+      .catch(() => setStormPing(`Heavy lake-effect bands are heading for ${DEMO_LOCATION.name}. Finish your readiness checklist before the roads close.`))
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
   return (
     <div className="app">
       <header className="top">
@@ -84,7 +102,14 @@ export default function App() {
             <span className="plaque-sub">Western New York</span>
           </div>
         </div>
+        <nav className="top-nav" aria-label="Sections">
+          <button onClick={() => scrollTo('map')}>Map</button>
+          <button onClick={() => scrollTo('readiness')}>Readiness</button>
+          <button onClick={() => scrollTo('community')}>Community</button>
+          <button onClick={() => scrollTo('volunteers')}>Volunteer hub</button>
+        </nav>
         <div className="top-actions">
+          <button className="btn" onClick={startDemo}>Start demo</button>
           <span className="loc-pill">
             <span className="loc-dot" />
             {userLocation.name}
@@ -104,6 +129,18 @@ export default function App() {
         <a href="https://www.weather.gov/buf" target="_blank" rel="noreferrer">Real conditions: NWS Buffalo</a>
       </p>
       <LocationSearch areas={areas} onFound={(place) => { setUserLocation(place); setSelected(null) }} />
+      {stormPing && (
+        <div className="storm-ping" role="alert">
+          <div>
+            <strong>Storm ping · Lake-effect snow warning</strong>
+            <p>{stormPing}</p>
+          </div>
+          <div className="storm-ping-actions">
+            <button className="btn primary" onClick={() => { setStormPing(''); scrollTo('readiness') }}>Open checklist</button>
+            <button className="btn" onClick={() => setStormPing('')}>Dismiss</button>
+          </div>
+        </div>
+      )}
       {alerts.length > 0 && (
         <div className="alert-bar" role="status">
           <strong>{alerts[0].event}</strong> {alerts[0].headline}
@@ -112,7 +149,7 @@ export default function App() {
       {error && <div className="error-bar">{error}</div>}
 
       <main className="grid">
-        <section className="card map-card">
+        <section className="card map-card" id="map">
           <div className="card-head">
             <h2>Storm total snowfall</h2>
             <p className="sub">Tap a town, pin or any spot to check it.</p>
@@ -123,11 +160,19 @@ export default function App() {
 
         <AreaPanel place={focusPlace} isUser={selected === null} hoursAhead={hoursAhead} dataMode={dataMode} onReset={() => setSelected(null)} />
         <RoutePanel origin={userLocation} resources={resources} areas={areas} hoursAhead={hoursAhead} dataMode={dataMode} onPlan={setRoutePlan} />
-        <ReadinessPanel place={userLocation} onAsk={setChatQuestion} />
-        <ShelterList resources={resources} onPick={setSelected} />
-        <RiskList areas={areas} hoursAhead={hoursAhead} onPick={(row) => setSelected({ name: row.town, lat: row.lat, lon: row.lon })} />
         <ChatPanel userLocation={userLocation} hoursAhead={hoursAhead} dataMode={dataMode} onHelpDraft={setHelpDraft} question={chatQuestion} onQuestionUsed={() => setChatQuestion('')} />
-        <HelpPanel user={user} userLocation={userLocation} draft={helpDraft} onDraftUsed={() => setHelpDraft(null)} />
+        <div className="lower">
+          <div className="col">
+            <ReadinessPanel place={userLocation} onAsk={setChatQuestion} />
+            <DemoCommunity draft={helpDraft} onDraftUsed={() => setHelpDraft(null)} onAskGemini={setChatQuestion} />
+          </div>
+          <div className="col">
+            <ShelterList resources={resources} onPick={setSelected} />
+            <RiskList areas={areas} hoursAhead={hoursAhead} onPick={(row) => setSelected({ name: row.town, lat: row.lat, lon: row.lon })} />
+            <VolunteerHub />
+          </div>
+        </div>
+        {firebaseReady && <HelpPanel user={user} userLocation={userLocation} draft={null} onDraftUsed={() => setHelpDraft(null)} />}
       </main>
     </div>
   )
