@@ -41,7 +41,7 @@ Pull `main` before you start, then work on a `role<N>/<task>` branch as usual.
 - [ ] openrouteservice rejects our key (403). Get a working key, or leave `ORS_API_KEY` blank for the straight-line mock.
 - [ ] In `routing.py`, fall back to the straight-line mock when the openrouteservice call fails, instead of returning a 502. The route panel currently shows an error.
 - [ ] Tune risk thresholds on the Dec 2022 replay so East Buffalo, Cheektowaga and Lackawanna light up the way they did.
-- [ ] Live NWS snowfall behind `USE_LIVE_NWS`, if time allows.
+- [x] Live NWS snowfall: on by default, sampled at every town and blended. Falls back to the sample storm if NWS is down or `USE_LIVE_NWS=false`.
 - [ ] Deploy the backend.
 
 **Role 3: Frontend + map**
@@ -50,10 +50,13 @@ Pull `main` before you start, then work on a `role<N>/<task>` branch as usual.
 - [ ] Deploy the frontend.
 
 **Role 4: Community + alerts**
-- [ ] Replace sample listings in `resources.json` with verified shelters and warming centers. Each needs `hours` and a `source_url`, and drops `"sample": true`. Listings with "24/7" hours show a green "Open" badge.
-- [ ] "On my way, ETA 15 min" on help requests: add an ETA when someone claims a request, show it to everyone, and allow the new field in `firestore.rules`.
-- [ ] Create the Firebase project and publish the rules. Send real email alerts.
-- [ ] Optional: save the readiness "Safe" status to the profile so emergency contacts can see it.
+- [x] Verified Buffalo City Mission shelters and Erie County police departments (address, phone, website, `source_url`). Map pins show them on hover.
+- [ ] Replace the remaining sample warming centers and shelters with verified ones. Each needs a `source_url` and drops `"sample": true`. Listings with "24/7" hours show a green "Open" badge.
+- [x] "On my way, ETA 15 min" on help requests, priority order, 10-minute escalation to the nearest shelter and 2-1-1, and rating the helper afterwards.
+- [ ] **Publish the updated `firebase/firestore.rules`** (new: volunteers, ratings, reports, ETA on claims). Without this, the volunteer hub and ratings get "permission denied".
+- [ ] Send real email alerts: set `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD` in `backend/.env` (a Gmail app password works). Until then alerts show "Not sent".
+- [x] Readiness checklist saves to the profile, and "Tell my contacts I'm safe" sends a real update.
+- [x] Volunteer hub: sign up with skills, ratings from people helped, reports. No ID check yet, so nothing says "verified".
 
 **Everyone**
 - [ ] Pick one name, Snowbelt or Cold Path, before the video and Devpost.
@@ -98,8 +101,8 @@ Each role owns its own files, so we rarely edit the same file at the same time. 
 | --- | --- | --- | --- |
 | 1. Gemini assistant (track centerpiece) | | `backend/app/services/geminiAgent.py`, `backend/app/routers/chat.py`, `frontend/src/components/ChatPanel.tsx` | Get a key, confirm tool calls work, write 10 test questions and fix bad answers, add a "compare to past storms" tool |
 | 2. Weather data + routes | | `backend/app/services/snowModel.py`, `nws.py`, `routing.py`, `places.py`, `data/towns.json`, `routers/weather.py`, `routers/routing.py` | ORS key and real routes, live NWS snowfall behind `USE_LIVE_NWS`, tune risk thresholds on the replay, deploy backend |
-| 3. Frontend + map | | `frontend/src/App.tsx`, `MapView.tsx`, `SnowLayer.tsx`, `TimeControl.tsx`, `AreaPanel.tsx`, `RiskList.tsx`, `LocationSearch.tsx`, `ReadinessPanel.tsx`, `RoutePanel.tsx`, `ShelterList.tsx`, `styles.css` | Prototype look, gauges, phone layout, deploy frontend |
-| 4. Community + accounts + alerts | | `frontend/src/firebase.ts`, `HelpPanel.tsx`, `firebase/firestore.rules`, `backend/app/services/notify.py`, `firebaseAuth.py`, `backend/app/routers/community.py`, `backend/app/data/resources.json` | Firebase project, email alerts, Twilio, replace sample pins with a verified shelter list |
+| 3. Frontend + map | | `frontend/src/App.tsx`, `MapView.tsx`, `SnowLayer.tsx`, `TimeControl.tsx`, `AreaPanel.tsx`, `RiskList.tsx`, `LocationSearch.tsx`, `ReadinessPanel.tsx`, `RoutePanel.tsx`, `ShelterList.tsx`, `Snowfall.tsx`, `styles.css` | Prototype look, gauges, phone layout, deploy frontend |
+| 4. Community + accounts + alerts | | `frontend/src/firebase.ts`, `HelpPanel.tsx`, `VolunteerHub.tsx`, `firebase/firestore.rules`, `backend/app/services/notify.py`, `firebaseAuth.py`, `backend/app/routers/community.py`, `backend/app/data/resources.json` | Firebase project, email alerts, Twilio, replace sample pins with a verified shelter list |
 
 Everyone: Devpost write-up and demo. AJ cuts the demo video.
 

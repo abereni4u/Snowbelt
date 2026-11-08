@@ -29,7 +29,7 @@ class Contact(BaseModel):
 
 
 class HelpAlert(BaseModel):
-    kind: str = Field(description="stuck | no_heat | medical | supplies | check_on_me")
+    kind: str = Field(description="stuck | no_heat | medical | supplies | check_on_me, or safe for an 'I'm safe' update")
     note: str = ""
     lat: float
     lon: float

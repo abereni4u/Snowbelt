@@ -4,15 +4,15 @@
   State that several panels share lives here:
     - where the user is (browser location, falling back to UB North Campus)
     - which place is selected on the map
-    - the time being viewed (0 = now, up to +24 h) and data mode (live sample or 2022 replay)
+    - the time being viewed (0 = now, up to +24 h) and data mode (live NWS forecast or 2022 replay)
     - a help request Gemini drafted, handed to the help panel for the user to confirm
     - a question for Gemini from the readiness checklist, and the route shown on the map
 */
 import { useEffect, useState } from 'react'
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import { api } from './api'
-import { auth, firebaseReady, signInWithGoogle, signOutUser } from './firebase'
-import type { AreaRow, DataMode, HelpDraft, NwsAlert, Place, Resource, RiskGrid, RoutePlan } from './types'
+import { auth, firebaseReady, onSignInError, signInWithGoogle, signOutUser } from './firebase'
+import type { AreaRow, Conditions, DataMode, HelpDraft, NwsAlert, Place, Resource, RiskGrid, RoutePlan } from './types'
 import MapView from './components/MapView'
 import TimeControl from './components/TimeControl'
 import AreaPanel from './components/AreaPanel'
@@ -21,15 +21,30 @@ import ShelterList from './components/ShelterList'
 import LocationSearch from './components/LocationSearch'
 import ReadinessPanel from './components/ReadinessPanel'
 import RoutePanel from './components/RoutePanel'
-import DemoCommunity from './components/DemoCommunity'
 import VolunteerHub from './components/VolunteerHub'
 import Snowfall from './components/Snowfall'
 import ChatPanel from './components/ChatPanel'
 import HelpPanel from './components/HelpPanel'
 
 const FALLBACK_LOCATION: Place = { name: 'UB North Campus', lat: 43.001, lon: -78.789 }
-// The demo story: a Lackawanna resident during the Nov 2022 replay, where the heaviest band sat
-const DEMO_LOCATION: Place = { name: 'Lackawanna', lat: 42.825, lon: -78.823 }
+// NWS alerts that mean "get ready now"
+const WINTER_ALERT = /lake effect snow|winter storm|blizzard|snow squall|ice storm|winter weather/i
+
+const DATA_NOTICE: Record<string, [string, string]> = {
+  nws: ['Live NWS', 'Snowfall from the National Weather Service forecast, refreshed every 30 minutes.'],
+  replay: ['Replay', 'Illustrative replay of the Nov 17-20, 2022 lake-effect storm, not observed data.'],
+  sample: ['Sample data', "Live NWS data isn't available right now, so snow numbers come from a sample storm."],
+}
+
+function stormMessage(alerts: NwsAlert[], now: Conditions | null, place: Place, mode: DataMode): string {
+  const winter = alerts.find((alert) => WINTER_ALERT.test(alert.event))
+  if (mode === 'live' && winter) return `${winter.event} for Western New York. ${winter.headline}`
+  if (now && (now.level === 'high' || now.next_6h_in >= 4)) {
+    const replay = mode === 'replay' ? ' (2022 replay)' : ''
+    return `Heavy snow near ${place.name}${replay}: ${now.rate_in_hr.toFixed(1)} in/hr now and ${now.next_6h_in} more inches in the next 6 hours.`
+  }
+  return ''
+}
 
 export default function App() {
   const [userLocation, setUserLocation] = useState<Place>(FALLBACK_LOCATION)
@@ -44,8 +59,10 @@ export default function App() {
   const [helpDraft, setHelpDraft] = useState<HelpDraft | null>(null)
   const [chatQuestion, setChatQuestion] = useState('')
   const [routePlan, setRoutePlan] = useState<RoutePlan | null>(null)
-  const [stormPing, setStormPing] = useState('')
+  const [userNow, setUserNow] = useState<Conditions | null>(null)
+  const [pingDismissed, setPingDismissed] = useState('')
   const [error, setError] = useState('')
+  const [authError, setAuthError] = useState('')
 
   // Browser location, if the user allows it
   useEffect(() => {
@@ -58,6 +75,7 @@ export default function App() {
   }, [])
 
   useEffect(() => (auth ? onAuthStateChanged(auth, setUser) : undefined), [])
+  useEffect(() => onSignInError(setAuthError), [])
 
   useEffect(() => {
     api.resources(userLocation.lat, userLocation.lon).then(setResources).catch(() => undefined)
@@ -79,18 +97,14 @@ export default function App() {
     }
   }, [hoursAhead, dataMode])
 
-  const focusPlace = selected ?? userLocation
+  // Conditions where the user is, right now, for the storm warning
+  useEffect(() => {
+    api.conditions(userLocation.lat, userLocation.lon, 0, dataMode).then(setUserNow).catch(() => setUserNow(null))
+  }, [userLocation, dataMode])
 
-  function startDemo() {
-    setDataMode('replay')
-    setHoursAhead(0)
-    setUserLocation(DEMO_LOCATION)
-    setSelected(null)
-    api.conditions(DEMO_LOCATION.lat, DEMO_LOCATION.lon, 0, 'replay')
-      .then((now) => setStormPing(`Heavy lake-effect bands are over ${DEMO_LOCATION.name}: ${now.rate_in_hr.toFixed(1)} in/hr now and ${now.next_6h_in} more inches in the next 6 hours. Finish your readiness checklist before the roads close.`))
-      .catch(() => setStormPing(`Heavy lake-effect bands are heading for ${DEMO_LOCATION.name}. Finish your readiness checklist before the roads close.`))
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+  const focusPlace = selected ?? userLocation
+  const stormPing = stormMessage(alerts, userNow, userLocation, dataMode)
+  const [noticeTag, noticeText] = DATA_NOTICE[grid?.source ?? (dataMode === 'replay' ? 'replay' : 'nws')] ?? DATA_NOTICE.sample
 
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
@@ -121,7 +135,6 @@ export default function App() {
           <button onClick={() => scrollTo('volunteers')}>Volunteer hub</button>
         </nav>
         <div className="top-actions">
-          <button className="btn" onClick={startDemo}>Start demo</button>
           <span className="loc-pill">
             <span className="loc-dot" />
             {userLocation.name}
@@ -136,55 +149,59 @@ export default function App() {
       </header>
 
       <p className="notice">
-        <span className="tag">{dataMode === 'replay' ? 'Replay' : 'Sample data'}</span>
-        Snow numbers come from a sample model until live NWS data is wired in.
+        <span className="tag">{noticeTag}</span>
+        {noticeText}
         <a href="https://www.weather.gov/buf" target="_blank" rel="noreferrer">Real conditions: NWS Buffalo</a>
       </p>
       <LocationSearch areas={areas} onFound={(place) => { setUserLocation(place); setSelected(null) }} />
-      {stormPing && (
+      {stormPing && stormPing !== pingDismissed && (
         <div className="storm-ping" role="alert">
           <div>
-            <strong>Storm ping · Lake-effect snow warning</strong>
-            <p>{stormPing}</p>
+            <strong>Storm warning</strong>
+            <p>{stormPing} Finish your readiness checklist before the roads get bad.</p>
           </div>
           <div className="storm-ping-actions">
-            <button className="btn primary" onClick={() => { setStormPing(''); scrollTo('readiness') }}>Open checklist</button>
-            <button className="btn" onClick={() => setStormPing('')}>Dismiss</button>
+            <button className="btn primary" onClick={() => { setPingDismissed(stormPing); scrollTo('readiness') }}>Open checklist</button>
+            <button className="btn" onClick={() => setPingDismissed(stormPing)}>Dismiss</button>
           </div>
         </div>
       )}
-      {alerts.length > 0 && (
+      {alerts.length > 0 && !WINTER_ALERT.test(alerts[0].event) && (
         <div className="alert-bar" role="status">
           <strong>{alerts[0].event}</strong> {alerts[0].headline}
         </div>
       )}
       {error && <div className="error-bar">{error}</div>}
+      {authError && (
+        <div className="error-bar row-between" role="alert">
+          <span>{authError}</span>
+          <button className="linkish" onClick={() => setAuthError('')}>Dismiss</button>
+        </div>
+      )}
 
       <main className="grid">
-        <section className="card map-card" id="map">
-          <div className="card-head">
-            <h2>Storm total snowfall</h2>
-            <p className="sub">Tap a town, pin or any spot to check it.</p>
-          </div>
-          <MapView grid={grid} resources={resources} userLocation={userLocation} selected={selected} route={routePlan} onPick={setSelected} />
-          <TimeControl hoursAhead={hoursAhead} onHoursChange={setHoursAhead} dataMode={dataMode} onDataModeChange={setDataMode} />
-        </section>
-
-        <AreaPanel place={focusPlace} isUser={selected === null} hoursAhead={hoursAhead} dataMode={dataMode} onReset={() => setSelected(null)} />
-        <RoutePanel origin={userLocation} resources={resources} areas={areas} hoursAhead={hoursAhead} dataMode={dataMode} onPlan={setRoutePlan} />
-        <ChatPanel userLocation={userLocation} hoursAhead={hoursAhead} dataMode={dataMode} onHelpDraft={setHelpDraft} question={chatQuestion} onQuestionUsed={() => setChatQuestion('')} />
-        <div className="lower">
-          <div className="col">
-            <ReadinessPanel place={userLocation} onAsk={setChatQuestion} />
-            <DemoCommunity draft={helpDraft} onDraftUsed={() => setHelpDraft(null)} onAskGemini={setChatQuestion} />
-          </div>
-          <div className="col">
-            <ShelterList resources={resources} onPick={setSelected} />
-            <RiskList areas={areas} hoursAhead={hoursAhead} onPick={(row) => setSelected({ name: row.town, lat: row.lat, lon: row.lon })} />
-            <VolunteerHub />
-          </div>
+        <div className="col">
+          <section className="card map-card" id="map">
+            <div className="card-head">
+              <h2>Storm total snowfall</h2>
+              <p className="sub">Tap a town, pin or any spot to check it.</p>
+            </div>
+            <MapView grid={grid} resources={resources} userLocation={userLocation} selected={selected} route={routePlan} onPick={setSelected} />
+            <TimeControl hoursAhead={hoursAhead} onHoursChange={setHoursAhead} dataMode={dataMode} onDataModeChange={setDataMode} />
+          </section>
+          <RoutePanel origin={userLocation} resources={resources} areas={areas} hoursAhead={hoursAhead} dataMode={dataMode} onPlan={setRoutePlan} />
+          <ReadinessPanel place={userLocation} user={user} onAsk={setChatQuestion} />
+          <HelpPanel user={user} userLocation={userLocation} resources={resources} draft={helpDraft} onDraftUsed={() => setHelpDraft(null)} onAskGemini={setChatQuestion} />
         </div>
-        {firebaseReady && <HelpPanel user={user} userLocation={userLocation} draft={null} onDraftUsed={() => setHelpDraft(null)} />}
+
+        {/* Two independent columns on desktop; on phones they merge and the cards follow the CSS order */}
+        <div className="col">
+          <AreaPanel place={focusPlace} isUser={selected === null} hoursAhead={hoursAhead} dataMode={dataMode} onReset={() => setSelected(null)} />
+          <ChatPanel userLocation={userLocation} hoursAhead={hoursAhead} dataMode={dataMode} onHelpDraft={setHelpDraft} question={chatQuestion} onQuestionUsed={() => setChatQuestion('')} />
+          <ShelterList resources={resources} onPick={setSelected} />
+          <RiskList areas={areas} hoursAhead={hoursAhead} onPick={(row) => setSelected({ name: row.town, lat: row.lat, lon: row.lon })} />
+          <VolunteerHub user={user} userLocation={userLocation} />
+        </div>
       </main>
     </div>
   )
