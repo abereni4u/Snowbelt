@@ -64,6 +64,7 @@ export default function App() {
   const [pingDismissed, setPingDismissed] = useState('')
   const [error, setError] = useState('')
   const [authError, setAuthError] = useState('')
+  const [slowStart, setSlowStart] = useState(false)
 
   // Browser location, if the user allows it
   useEffect(() => {
@@ -73,6 +74,12 @@ export default function App() {
       () => undefined,
       { timeout: 8000 },
     )
+  }, [])
+
+  // The hosted backend sleeps when idle (Render free plan); say so if the first load is slow
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSlowStart(true), 4000)
+    return () => window.clearTimeout(timer)
   }, [])
 
   useEffect(() => (auth ? onAuthStateChanged(auth, setUser) : undefined), [])
@@ -92,7 +99,9 @@ export default function App() {
         setAreas(areaData)
         setError('')
       })
-      .catch(() => !cancelled && setError("Can't reach the backend. Is it running on port 8000?"))
+      .catch(() => !cancelled && setError(import.meta.env.DEV
+        ? "Can't reach the backend. Is it running on port 8000?"
+        : "Can't reach the server right now. Refresh the page in a minute."))
     return () => {
       cancelled = true
     }
@@ -170,6 +179,11 @@ export default function App() {
       {alerts.length > 0 && !WINTER_ALERT.test(alerts[0].event) && (
         <div className="alert-bar" role="status">
           <strong>{alerts[0].event}</strong> {alerts[0].headline}
+        </div>
+      )}
+      {slowStart && !grid && !error && (
+        <div className="alert-bar" role="status">
+          Waking up the server. It sleeps when no one is using it, so the first load can take up to a minute.
         </div>
       )}
       {error && <div className="error-bar">{error}</div>}

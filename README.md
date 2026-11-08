@@ -44,13 +44,13 @@ Pull `main` before you start, then work on a `role<N>/<task>` branch as usual.
 - [x] Live NWS snowfall, on by default, with the sample storm as the fallback.
 - [x] Real routes from openrouteservice, with the straight-line mock when the call fails.
 - [ ] Tune risk thresholds on the Dec 2022 replay so East Buffalo, Cheektowaga and Lackawanna light up the way they did.
-- [ ] Deploy the backend (see Deploying below).
+- [x] Deploy the backend (see Deploying below).
 
 **Role 3: Frontend + map**
 - [x] Sticky header nav, two-column desktop layout, phone layout.
 - [x] Snowfall bands with outlines and a hover readout; pin hover cards.
 - [ ] Optional: a "regions to avoid" map layer from the high-risk cells, a radar-style close-up around the searched place with mile rings.
-- [ ] Deploy the frontend (see Deploying below).
+- [x] Deploy the frontend (see Deploying below).
 
 **Role 4: Community + alerts**
 - [x] Verified Buffalo City Mission shelters and Erie County police departments (address, phone, website, `source_url`).
@@ -76,9 +76,17 @@ python -m scripts.seedTestVolunteers --remove   # delete them before the public 
 
 ### Deploying
 
-Not set up yet. The recommended path is **Firebase Hosting for the frontend and Google Cloud Run for the backend**, both in the `snowbelt-2adb2` project. Hosting can forward `/api` to Cloud Run on the same domain, so there is no CORS or API URL to configure, and `snowbelt-2adb2.web.app` is already allowed for Google sign-in. It needs the project on the pay-as-you-go plan (a hackathon's traffic stays in the free tier).
+- **Frontend:** GitHub Pages at https://abereni4u.github.io/Snowbelt_UBHacking2026/. `.github/workflows/deploy-pages.yml` builds and publishes it on every push to `main`.
+- **Backend:** Render's free plan, from `render.yaml`. It sleeps after 15 minutes idle; the next visit wakes it in about a minute, and the page says so while it waits.
+- **Email/SMS:** left off on purpose in the hosted version, so public visitors only get dry-run alerts.
 
-Without a card: GitHub Pages for the frontend (build with `VITE_API_BASE` pointing at the backend) and Hugging Face Spaces (Docker) for the backend. Either way, set `FRONTEND_ORIGINS` on the backend to the site's address and add that domain under Firebase console > Authentication > Settings > Authorized domains.
+One-time setup:
+
+1. GitHub repo > Settings > Pages > Source: **GitHub Actions**.
+2. https://render.com > New > Blueprint > pick this repo. Enter `GEMINI_API_KEY` and `ORS_API_KEY` when asked. Then, in the `snowbelt-api` service > Environment > Secret Files, add `firebase-service-account.json` with the service-account JSON. Note the service URL.
+3. GitHub repo > Settings > Secrets and variables > Actions > **Variables**: `VITE_API_BASE` (the Render URL) and the four `VITE_FIREBASE_*` values from `frontend/.env.local`. With the GitHub CLI: `gh variable set -f frontend/.env.local`, then `gh variable set VITE_API_BASE --body <render-url>`.
+4. Firebase console > Authentication > Settings > Authorized domains: add `abereni4u.github.io`.
+5. GitHub repo > Actions > Deploy frontend > Run workflow.
 
 `docs/ui-prototype.html` is the clickable design from the whiteboard sketch. Open it in a browser for the look we're aiming for.
 

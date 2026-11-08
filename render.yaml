@@ -1,0 +1,25 @@
+# Render Blueprint for the backend (free plan: sleeps after 15 minutes idle, wakes on the next request).
+# Render dashboard > New > Blueprint > pick this repo. It asks for the sync: false values once.
+# Then add a Secret File named firebase-service-account.json (the service-account JSON) under
+# the service's Environment tab; Render mounts it at /etc/secrets/.
+# Email and SMS settings are left out on purpose, so public visitors only get dry-run alerts.
+services:
+  - type: web
+    name: snowbelt-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.10
+      - key: FRONTEND_ORIGINS
+        value: https://abereni4u.github.io
+      - key: FIREBASE_CREDENTIALS
+        value: /etc/secrets/firebase-service-account.json
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ORS_API_KEY
+        sync: false
