@@ -20,6 +20,9 @@ from app.services import nws, places, routing, snowModel
 
 logger = logging.getLogger("snowbelt.gemini")
 
+# Tried in order after GEMINI_MODEL when a model is overloaded or times out
+FALLBACK_MODELS = ["gemini-3.6-flash", "gemini-3.5-flash"]
+
 SYSTEM_RULES = """You are Snowbelt's assistant for people in Western New York (Erie, Niagara, Orleans, Genesee, Wyoming, Chautauqua, Cattaraugus and Allegany counties) during lake-effect snow.
 
 Use the tools to look up real numbers before you answer anything about snow, roads, risk, alerts or places to go. Never guess a number.
@@ -132,16 +135,29 @@ def runChat(messages: list, userLat, userLon, hoursAhead: int, mode: str) -> dic
         role = "model" if (message["role"] == "assistant") else "user"
         contents.append(types.Content(role=role, parts=[types.Part(text=message["text"])]))
 
-    client = genai.Client(api_key=settings.geminiApiKey)
-    response = client.models.generate_content(
-        model=settings.geminiModel,
-        contents=contents,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_RULES + "\n\n" + describeContext(context),
-            tools=buildTools(context),
-            automatic_function_calling=types.AutomaticFunctionCallingConfig(maximum_remote_calls=8),
-        ),
-    )
+    # Fail fast and try the next model when one is overloaded (503), instead of hanging
+    client = genai.Client(api_key=settings.geminiApiKey,
+                          http_options=types.HttpOptions(timeout=25000, retry_options=types.HttpRetryOptions(attempts=1)))
+    models = list(dict.fromkeys([settings.geminiModel] + FALLBACK_MODELS))
+    response = None
+    for model in models:
+        context["helpDrafts"] = list()
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_RULES + "\n\n" + describeContext(context),
+                    tools=buildTools(context),
+                    automatic_function_calling=types.AutomaticFunctionCallingConfig(maximum_remote_calls=8),
+                ),
+            )
+            break
+        except Exception as error:
+            logger.warning("Gemini model %s failed: %s", model, error)
+    if (response is None):
+        return dict(reply="Gemini is busy right now. Try again in a minute. If anyone's life may be in danger, call 911.",
+                    tool_calls=list(), help_draft=None)
 
     # Pull the tool calls out of the SDK's call history so the UI can show what Gemini checked
     toolCalls = list()
