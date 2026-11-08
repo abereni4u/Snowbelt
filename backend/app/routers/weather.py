@@ -11,23 +11,24 @@ from app.services import nws, places, snowModel
 router = APIRouter(prefix="/api", tags=["weather"])
 
 
+# version changes when the live NWS field refreshes, so old live layers drop out of the cache
 @lru_cache(maxsize=64)
-def cachedSnowRaster(mode: str, hour: int) -> dict:
+def cachedSnowRaster(mode: str, hour: int, version: float) -> dict:
     return snowModel.buildSnowRaster(mode, hour)
 
 
 @router.get("/risk")
 def getRisk(hours_ahead: int = Query(0, ge=0, le=24), mode: str = Query("live", pattern="^(live|replay)$")):
     """Snowfall grid for Western New York, as number arrays the map draws as one smooth layer."""
-    raster = cachedSnowRaster(mode, hours_ahead)
-    return dict(raster, wind=snowModel.getWind(mode, hours_ahead), source="sample")
+    raster = cachedSnowRaster(mode, hours_ahead, snowModel.liveVersion(mode))
+    return dict(raster, wind=snowModel.getWind(mode, hours_ahead), source=snowModel.dataSource(mode))
 
 
 @router.get("/conditions")
 def getConditions(lat: float, lon: float, hours_ahead: int = Query(0, ge=0, le=24), mode: str = Query("live", pattern="^(live|replay)$")):
     result = snowModel.getConditions(mode, lat, lon, hours_ahead)
     result["nearest_town"] = places.nearestTown(lat, lon)["name"]
-    result["source"] = "sample"
+    result["source"] = snowModel.dataSource(mode)
     return result
 
 

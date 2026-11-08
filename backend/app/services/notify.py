@@ -29,12 +29,19 @@ KIND_TEXT = dict(
 
 
 def buildAlertText(displayName: str, kind: str, note: str, lat: float, lon: float) -> str:
+    if (kind == "safe"):
+        lines = ["Snowbelt update: %s marked themselves safe and ready for the storm." % displayName]
+        if (note.strip() != ""):
+            lines.append("Note: %s" % note.strip())
+        return "\n".join(lines)
     what = KIND_TEXT.get(kind, "asked for help")
     lines = list()
     lines.append("Snowbelt help alert: %s %s." % (displayName, what))
     if (note.strip() != ""):
         lines.append("Note: %s" % note.strip())
     lines.append("Location: https://maps.google.com/?q=%.5f,%.5f" % (lat, lon))
+    if (len(settings.frontendOrigins) > 0):
+        lines.append("Say you're on your way (sign in, then tap \"I can help\"): %s/#community" % settings.frontendOrigins[0])
     lines.append("If this is an emergency, call 911.")
     return "\n".join(lines)
 
@@ -74,7 +81,8 @@ def sendHelpAlerts(displayName: str, kind: str, note: str, lat: float, lon: floa
         phone = (contact.get("phone") or "").strip()
         if (email != ""):
             try:
-                status = sendEmail(email, "Snowbelt: %s needs help" % displayName, bodyText)
+                subject = ("Snowbelt: %s is safe" % displayName) if (kind == "safe") else ("Snowbelt: %s needs help" % displayName)
+                status = sendEmail(email, subject, bodyText)
             except Exception as error:
                 logger.warning("email to %s failed: %s", email, error)
                 status = "failed"

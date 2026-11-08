@@ -46,6 +46,10 @@ export interface Resource {
   lon: number
   hours: string
   phone: string
+  address: string
+  website: string
+  // Listed capacity (people), not live occupancy; null when unknown
+  capacity: number | null
   source_url: string
   sample: boolean
   distance_mi: number

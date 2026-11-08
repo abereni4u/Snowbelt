@@ -1,14 +1,18 @@
 // Map (Role 3). OpenStreetMap tiles, the smooth snowfall layer from /api/risk, help pins, you, and the selected spot.
-import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMapEvents } from 'react-leaflet'
+import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMapEvents } from 'react-leaflet'
 import { divIcon, type LatLngBoundsExpression } from 'leaflet'
+import { useState } from 'react'
 import type { Place, Resource, RiskGrid, RoutePlan } from '../types'
-import SnowLayer, { SNOW_STOPS } from './SnowLayer'
+import SnowLayer, { SNOW_STOPS, valueAt } from './SnowLayer'
+import { status } from './ShelterList'
 
 // The eight Western New York counties; matches BOUNDS in backend/app/services/snowModel.py
 const WNY_BOUNDS: LatLngBoundsExpression = [[41.99, -79.8], [43.4, -77.7]]
 
-const LEGEND_STOPS = SNOW_STOPS.slice(1)
-const LEGEND_GRADIENT = `linear-gradient(to right, ${LEGEND_STOPS.map(([, [red, green, blue]]) => `rgb(${red} ${green} ${blue})`).join(', ')})`
+// Stepped legend: one solid block per snowfall band, matching the map
+const LEGEND_STOPS = SNOW_STOPS
+const LEGEND_GRADIENT = `linear-gradient(to right, ${LEGEND_STOPS.map(([, [red, green, blue]], index) =>
+  `rgb(${red} ${green} ${blue}) ${(index / LEGEND_STOPS.length) * 100}% ${((index + 1) / LEGEND_STOPS.length) * 100}%`).join(', ')})`
 
 const PIN_COLOR: Record<Resource['type'], string> = {
   warming_center: '#f28c28',
@@ -51,12 +55,58 @@ const PIN_ICON = Object.fromEntries(
       html: `<span class="resource-pin-badge" style="background:${PIN_COLOR[type]}">${glyphSvg(type, 16)}</span>`,
       iconSize: [28, 28],
       iconAnchor: [14, 14],
-      tooltipAnchor: [0, -14],
+      tooltipAnchor: [14, 0],
     }),
   ]),
 ) as Record<Resource['type'], ReturnType<typeof divIcon>>
 
 const toLatLng = (points: [number, number][]): [number, number][] => points.map(([lon, lat]) => [lat, lon])
+
+function siteLabel(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
+
+// Details for one pin, shown on hover (tooltip) and on click (popup, so links can be tapped).
+// Rows only appear when the listing has that field; nothing is filled in by guesswork.
+function ResourceCard({ resource }: { resource: Resource }) {
+  const { label, open } = status(resource)
+  const website = resource.website || resource.source_url
+  const hasContact = Boolean(resource.phone || resource.address || website)
+  return (
+    <div className="pin-card">
+      <div className="pin-card-head">
+        <span className="resource-pin-badge" style={{ background: PIN_COLOR[resource.type] }} dangerouslySetInnerHTML={{ __html: glyphSvg(resource.type, 13) }} />
+        <span className="pin-card-type">{PIN_LABEL[resource.type]}</span>
+        {resource.sample && <span className="chip unknown">Sample</span>}
+      </div>
+      <b className="pin-card-name">{resource.name}</b>
+      <dl>
+        <dt>Distance</dt>
+        <dd className="mono">{(resource.distance_mi * 1.609344).toFixed(1)} km away</dd>
+        <dt>Status</dt>
+        <dd><span className={`chip ${open ? 'open' : 'unknown'}`}>{label}</span></dd>
+        {resource.capacity != null && (<><dt>Capacity</dt><dd>{resource.capacity} people</dd></>)}
+        {resource.address && (<><dt>Address</dt><dd>{resource.address}</dd></>)}
+        {resource.phone && (<><dt>Phone</dt><dd><a href={`tel:${resource.phone.replace(/[^\d+]/g, '')}`}>{resource.phone}</a></dd></>)}
+        {website && (<><dt>Website</dt><dd><a href={website} target="_blank" rel="noreferrer">{siteLabel(website)}</a></dd></>)}
+      </dl>
+      {!hasContact && <p className="pin-card-note">Contact details not listed yet. Call 2-1-1 for shelter info.</p>}
+    </div>
+  )
+}
+
+// Reports the snow under the cursor so the legend can show exact numbers
+function HoverReadout({ grid, onHover }: { grid: RiskGrid | null; onHover: (value: { total: number; rate: number } | null) => void }) {
+  useMapEvents({
+    mousemove: (event) => onHover(grid ? valueAt(grid, event.latlng.lat, event.latlng.lng) : null),
+    mouseout: () => onHover(null),
+  })
+  return null
+}
 
 function ClickToSelect({ onPick }: { onPick: (place: Place) => void }) {
   useMapEvents({
@@ -75,6 +125,7 @@ interface Props {
 }
 
 export default function MapView({ grid, resources, userLocation, selected, route, onPick }: Props) {
+  const [hover, setHover] = useState<{ total: number; rate: number } | null>(null)
   return (
     <div className="map-wrap">
       <MapContainer bounds={WNY_BOUNDS} className="map" scrollWheelZoom>
@@ -107,9 +158,19 @@ export default function MapView({ grid, resources, userLocation, selected, route
             position={[resource.lat, resource.lon]}
             icon={PIN_ICON[resource.type]}
             title={PIN_LABEL[resource.type]}
-            eventHandlers={{ click: () => onPick({ name: resource.name, lat: resource.lat, lon: resource.lon }) }}
+            eventHandlers={{
+              click: () => onPick({ name: resource.name, lat: resource.lat, lon: resource.lon }),
+              // Hide the hover copy while the clicked popup is showing the same card
+              popupopen: (event) => event.target.getTooltip()?.setOpacity(0),
+              popupclose: (event) => event.target.getTooltip()?.setOpacity(1),
+            }}
           >
-            <Tooltip>{resource.name}{resource.sample ? ' (sample)' : ''}</Tooltip>
+            <Tooltip direction="auto" className="pin-tip" opacity={1}>
+              <ResourceCard resource={resource} />
+            </Tooltip>
+            <Popup className="pin-popup" closeButton={false} offset={[0, -10]}>
+              <ResourceCard resource={resource} />
+            </Popup>
           </Marker>
         ))}
         <CircleMarker center={[userLocation.lat, userLocation.lon]} radius={8} pathOptions={{ color: '#ffffff', weight: 3, fillColor: '#2f8fd8', fillOpacity: 1 }}>
@@ -117,15 +178,18 @@ export default function MapView({ grid, resources, userLocation, selected, route
         </CircleMarker>
         {selected && <CircleMarker center={[selected.lat, selected.lon]} radius={14} pathOptions={{ color: '#8fd0ff', weight: 2, fill: false, dashArray: '4 4' }} />}
         <ClickToSelect onPick={onPick} />
+        <HoverReadout grid={grid} onHover={setHover} />
       </MapContainer>
-      <div className="snow-legend" role="img" aria-label="Storm total snowfall, from 1 inch (light blue) to 36 or more inches (dark purple)">
+      <div className="snow-legend" role="img" aria-label="Storm total snowfall bands: 1-3, 3-6, 6-12, 12-24, 24-36 and 36 or more inches, light blue to dark purple">
         <span className="snow-legend-bar" style={{ background: LEGEND_GRADIENT }} />
         <span className="snow-legend-labels">
           {LEGEND_STOPS.map(([inches], index) => (
             <span key={inches}>{index === LEGEND_STOPS.length - 1 ? `${inches}+` : inches}</span>
           ))}
         </span>
-        <span className="snow-legend-unit">inches of snow</span>
+        <span className="snow-legend-unit">
+          {hover ? <>Here: <b className="mono">{hover.total.toFixed(1)} in</b> · {hover.rate.toFixed(1)} in/hr</> : 'inches of snow · hover for exact'}
+        </span>
       </div>
       <ul className="pin-legend" aria-label="Map pin types">
         {(Object.keys(PIN_GLYPH) as Resource['type'][]).map((type) => (

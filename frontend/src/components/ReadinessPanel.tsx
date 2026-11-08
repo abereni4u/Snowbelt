@@ -1,9 +1,14 @@
 // Storm readiness checklist (Role 3 layout). Each item is marked Have or Need; when every item is
 // Have the person is "Safe". Items they still need go to Gemini as a question, so its answer is
 // grounded in the same tools as the chat (nearby resources, conditions, alerts).
-// Answers are saved on this device only.
-import { useEffect, useState } from 'react'
-import type { Place } from '../types'
+// Answers are saved on this device, and on the person's profile when they're signed in. Once
+// everything is Have, they can send their emergency contacts an "I'm safe" message.
+import { useEffect, useRef, useState } from 'react'
+import type { User } from 'firebase/auth'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { api } from '../api'
+import { db } from '../firebase'
+import type { Contact, NotifyResult, Place } from '../types'
 
 const ITEMS = [
   { key: 'food', label: 'Food & water (3 days)' },
@@ -28,11 +33,27 @@ function loadAnswers(): Record<string, Answer> {
 
 interface Props {
   place: Place
+  user: User | null
   onAsk: (question: string) => void
 }
 
-export default function ReadinessPanel({ place, onAsk }: Props) {
+export default function ReadinessPanel({ place, user, onAsk }: Props) {
   const [answers, setAnswers] = useState<Record<string, Answer>>(loadAnswers)
+  const [sending, setSending] = useState(false)
+  const [sentNote, setSentNote] = useState('')
+  const loadedFor = useRef<string | null>(null)
+
+  // Signing in brings back the checklist saved on the profile (answers on this device win)
+  useEffect(() => {
+    if (!db || !user) return
+    getDoc(doc(db, 'users', user.uid))
+      .then((snapshot) => {
+        const saved = (snapshot.data()?.checklist ?? {}) as Record<string, Answer>
+        setAnswers((current) => ({ ...saved, ...current }))
+      })
+      .catch(() => undefined)
+      .finally(() => { loadedFor.current = user.uid })
+  }, [user])
 
   useEffect(() => {
     try {
@@ -40,7 +61,10 @@ export default function ReadinessPanel({ place, onAsk }: Props) {
     } catch {
       // storage blocked (private window); the checklist still works for this visit
     }
-  }, [answers])
+    if (db && user && loadedFor.current === user.uid) {
+      setDoc(doc(db, 'users', user.uid), { checklist: answers }, { merge: true }).catch(() => undefined)
+    }
+  }, [answers, user])
 
   const haveCount = ITEMS.filter((item) => answers[item.key] === 'have').length
   const needed = ITEMS.filter((item) => answers[item.key] === 'need')
@@ -48,6 +72,32 @@ export default function ReadinessPanel({ place, onAsk }: Props) {
 
   function mark(key: string, answer: Answer) {
     setAnswers((current) => ({ ...current, [key]: answer }))
+  }
+
+  async function tellContacts() {
+    if (!db || !user) return
+    setSending(true)
+    setSentNote('')
+    try {
+      const contacts = ((await getDoc(doc(db, 'users', user.uid))).data()?.contacts ?? []) as Contact[]
+      if (contacts.length === 0) {
+        setSentNote('Add emergency contacts under "Ask for help" first.')
+        return
+      }
+      const { results } = await api.notify(
+        { kind: 'safe', note: '', lat: place.lat, lon: place.lon, display_name: user.displayName ?? '', contacts },
+        await user.getIdToken(),
+      )
+      await setDoc(doc(db, 'users', user.uid), { safeAt: new Date().toISOString() }, { merge: true })
+      const sent = results.filter((result: NotifyResult) => result.status === 'sent').length
+      setSentNote(sent > 0
+        ? `Sent to ${sent} of ${results.length} contact channels.`
+        : "Saved, but nothing was sent: the server's email/SMS isn't set up yet.")
+    } catch (caught) {
+      setSentNote(caught instanceof Error ? caught.message : 'Could not send. Try again.')
+    } finally {
+      setSending(false)
+    }
   }
 
   function askGemini() {
@@ -78,7 +128,16 @@ export default function ReadinessPanel({ place, onAsk }: Props) {
           </li>
         ))}
       </ul>
-      {safe && <p className="ready-foot small">Marked Safe. Your emergency contacts (Mom, Sam) can see it. <span className="muted">(Demo)</span></p>}
+      {safe && (
+        <div className="ready-foot">
+          {user ? (
+            <button className="btn primary" onClick={tellContacts} disabled={sending}>{sending ? 'Sending…' : "Tell my contacts I'm safe"}</button>
+          ) : (
+            <p className="small muted">Sign in to save this and tell your emergency contacts you're safe.</p>
+          )}
+          {sentNote && <p className="small">{sentNote}</p>}
+        </div>
+      )}
       {needed.length > 0 && (
         <div className="ready-foot">
           <button className="btn primary" onClick={askGemini}>Ask Gemini how to get {needed.length === 1 ? 'it' : `these ${needed.length}`}</button>

@@ -25,7 +25,7 @@ geminiApiKey = readEnv("GEMINI_API_KEY")
 geminiModel = readEnv("GEMINI_MODEL", "gemini-3.8-flash")
 
 # Weather + routing (Role 2)
-useLiveNws = (readEnv("USE_LIVE_NWS", "false").lower() == "true")
+useLiveNws = (readEnv("USE_LIVE_NWS", "true").lower() == "true")   # NWS needs no key; set false to use the sample storm
 nwsUserAgent = readEnv("NWS_USER_AGENT", "(snowbelt-hackathon, github.com/abereni4u/Snowbelt_UBHacking2026)")
 orsApiKey = readEnv("ORS_API_KEY")
 

@@ -26,8 +26,8 @@ Ask the person which role they are working on if you don't know. Edit only that 
 | --- | --- |
 | 1. Gemini assistant | `backend/app/services/geminiAgent.py`, `backend/app/routers/chat.py`, `frontend/src/components/ChatPanel.tsx` |
 | 2. Weather data + routes | `backend/app/services/snowModel.py`, `nws.py`, `routing.py`, `places.py`, `backend/app/data/towns.json`, `backend/app/routers/weather.py`, `routing.py` |
-| 3. Frontend + map | `frontend/src/App.tsx`, `main.tsx`, `styles.css`, `components/MapView.tsx`, `SnowLayer.tsx`, `TimeControl.tsx`, `AreaPanel.tsx`, `RiskList.tsx`, `LocationSearch.tsx`, `ReadinessPanel.tsx`, `RoutePanel.tsx`, `ShelterList.tsx` |
-| 4. Community + alerts | `frontend/src/firebase.ts`, `components/HelpPanel.tsx`, `firebase/`, `backend/app/services/notify.py`, `firebaseAuth.py`, `backend/app/routers/community.py`, `backend/app/data/resources.json` |
+| 3. Frontend + map | `frontend/src/App.tsx`, `main.tsx`, `styles.css`, `components/MapView.tsx`, `SnowLayer.tsx`, `TimeControl.tsx`, `AreaPanel.tsx`, `RiskList.tsx`, `LocationSearch.tsx`, `ReadinessPanel.tsx`, `RoutePanel.tsx`, `ShelterList.tsx`, `Snowfall.tsx` |
+| 4. Community + alerts | `frontend/src/firebase.ts`, `components/HelpPanel.tsx`, `VolunteerHub.tsx`, `firebase/`, `backend/app/services/notify.py`, `firebaseAuth.py`, `backend/app/routers/community.py`, `backend/app/data/resources.json` |
 
 Shared files: `backend/app/main.py`, `backend/app/settings.py`, `backend/requirements*.txt`, `backend/.env.example`, `frontend/package.json`, `frontend/package-lock.json`, `frontend/.env.example`, `frontend/src/api.ts`, `frontend/src/types.ts`, `shared/contracts/`, `README.md`, `AGENTS.md`, `.github/`.
 

@@ -46,7 +46,7 @@ export const api = {
     request<ChatReply>('/api/chat', postJson({ messages, lat, lon, hours_ahead: hoursAhead, mode })),
 
   notify: (
-    body: { kind: HelpKind; note: string; lat: number; lon: number; display_name: string; contacts: Contact[] },
+    body: { kind: HelpKind | 'safe'; note: string; lat: number; lon: number; display_name: string; contacts: Contact[] },
     token: string,
   ) => request<{ results: NotifyResult[] }>('/api/help/notify', postJson(body, token)),
 }
