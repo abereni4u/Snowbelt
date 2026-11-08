@@ -187,7 +187,7 @@ export default function App() {
               <h2>Storm total snowfall</h2>
               <p className="sub">Tap a town, pin or any spot to check it.</p>
             </div>
-            <MapView grid={grid} resources={resources} userLocation={userLocation} selected={selected} route={routePlan} onPick={setSelected} />
+            <MapView grid={grid} resources={resources} userLocation={userLocation} selected={selected} route={routePlan} onPick={setSelected} onLocate={(place) => { setUserLocation(place); setSelected(null) }} />
             <TimeControl hoursAhead={hoursAhead} onHoursChange={setHoursAhead} dataMode={dataMode} onDataModeChange={setDataMode} />
           </section>
           <RoutePanel origin={userLocation} resources={resources} areas={areas} hoursAhead={hoursAhead} dataMode={dataMode} onPlan={setRoutePlan} />

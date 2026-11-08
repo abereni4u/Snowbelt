@@ -1,6 +1,6 @@
 // Map (Role 3). OpenStreetMap tiles, the smooth snowfall layer from /api/risk, help pins, you, and the selected spot.
 import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMapEvents } from 'react-leaflet'
-import { divIcon, type LatLngBoundsExpression } from 'leaflet'
+import { divIcon, type LatLngBoundsExpression, type Map as LeafletMap } from 'leaflet'
 import { useState } from 'react'
 import type { Place, Resource, RiskGrid, RoutePlan } from '../types'
 import SnowLayer, { SNOW_STOPS, valueAt } from './SnowLayer'
@@ -122,13 +122,40 @@ interface Props {
   selected: Place | null
   route: RoutePlan | null
   onPick: (place: Place) => void
+  onLocate: (place: Place) => void
 }
 
-export default function MapView({ grid, resources, userLocation, selected, route, onPick }: Props) {
+export default function MapView({ grid, resources, userLocation, selected, route, onPick, onLocate }: Props) {
   const [hover, setHover] = useState<{ total: number; rate: number } | null>(null)
+  const [map, setMap] = useState<LeafletMap | null>(null)
+  const [locating, setLocating] = useState(false)
+
+  // Ask the browser where the user is now and fly there; if that's blocked or fails, center on the "You" pin
+  function locate() {
+    if (!map) return
+    const flyTo = (lat: number, lon: number) => map.flyTo([lat, lon], Math.max(map.getZoom(), 12), { duration: 0.8 })
+    if (!navigator.geolocation) {
+      flyTo(userLocation.lat, userLocation.lon)
+      return
+    }
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocating(false)
+        onLocate({ name: 'Your location', lat: position.coords.latitude, lon: position.coords.longitude })
+        flyTo(position.coords.latitude, position.coords.longitude)
+      },
+      () => {
+        setLocating(false)
+        flyTo(userLocation.lat, userLocation.lon)
+      },
+      { timeout: 8000, maximumAge: 0 },
+    )
+  }
+
   return (
     <div className="map-wrap">
-      <MapContainer bounds={WNY_BOUNDS} className="map" scrollWheelZoom>
+      <MapContainer bounds={WNY_BOUNDS} className="map" scrollWheelZoom ref={setMap}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -180,6 +207,19 @@ export default function MapView({ grid, resources, userLocation, selected, route
         <ClickToSelect onPick={onPick} />
         <HoverReadout grid={grid} onHover={setHover} />
       </MapContainer>
+      <button
+        type="button"
+        className={`locate-btn${locating ? ' locating' : ''}`}
+        onClick={locate}
+        title="Center the map on my current location"
+        aria-label="Center the map on my current location"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="7" />
+          <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+        </svg>
+      </button>
       <div className="snow-legend" role="img" aria-label="Storm total snowfall bands: 1-3, 3-6, 6-12, 12-24, 24-36 and 36 or more inches, light blue to dark purple">
         <span className="snow-legend-bar" style={{ background: LEGEND_GRADIENT }} />
         <span className="snow-legend-labels">
