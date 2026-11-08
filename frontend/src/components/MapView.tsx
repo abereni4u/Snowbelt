@@ -11,10 +11,10 @@ const LEGEND_STOPS = SNOW_STOPS.slice(1)
 const LEGEND_GRADIENT = `linear-gradient(to right, ${LEGEND_STOPS.map(([, [red, green, blue]]) => `rgb(${red} ${green} ${blue})`).join(', ')})`
 
 const PIN_COLOR: Record<Resource['type'], string> = {
-  warming_center: '#0d9488',
-  shelter: '#0d9488',
-  police: '#1d4ed8',
-  government: '#1d4ed8',
+  warming_center: '#3fbf8f',
+  shelter: '#3fbf8f',
+  police: '#5b8def',
+  government: '#5b8def',
 }
 
 const toLatLng = (points: [number, number][]): [number, number][] => points.map(([lon, lat]) => [lat, lon])
@@ -48,17 +48,17 @@ export default function MapView({ grid, resources, userLocation, selected, route
           <>
             <Polyline
               positions={toLatLng(route.fastest.geometry.coordinates)}
-              pathOptions={route.safer ? { color: '#14212b', weight: 4, opacity: 0.6, dashArray: '6 8' } : { color: '#14212b', weight: 5, opacity: 0.85 }}
+              pathOptions={route.safer ? { color: '#9fb3cc', weight: 4, opacity: 0.8, dashArray: '6 8' } : { color: '#9fb3cc', weight: 5, opacity: 0.95 }}
             >
               <Tooltip sticky>Fastest: {route.fastest.minutes} min</Tooltip>
             </Polyline>
             {route.safer && (
-              <Polyline positions={toLatLng(route.safer.geometry.coordinates)} pathOptions={{ color: '#13804c', weight: 6, opacity: 0.9 }}>
+              <Polyline positions={toLatLng(route.safer.geometry.coordinates)} pathOptions={{ color: '#3fbf8f', weight: 6, opacity: 0.95 }}>
                 <Tooltip sticky>Safer: {route.safer.minutes} min</Tooltip>
               </Polyline>
             )}
             {[...route.fastest.red_stretches, ...(route.safer?.red_stretches ?? [])].map((stretch, index) => (
-              <Polyline key={index} positions={toLatLng(stretch)} pathOptions={{ color: '#d23c3c', weight: 6, opacity: 0.9 }} />
+              <Polyline key={index} positions={toLatLng(stretch)} pathOptions={{ color: '#ff6b6b', weight: 6, opacity: 0.95 }} />
             ))}
           </>
         )}
@@ -67,16 +67,16 @@ export default function MapView({ grid, resources, userLocation, selected, route
             key={resource.id}
             center={[resource.lat, resource.lon]}
             radius={7}
-            pathOptions={{ color: '#ffffff', weight: 2, fillColor: PIN_COLOR[resource.type], fillOpacity: 1 }}
+            pathOptions={{ color: '#0a1424', weight: 2, fillColor: PIN_COLOR[resource.type], fillOpacity: 1 }}
             eventHandlers={{ click: () => onPick({ name: resource.name, lat: resource.lat, lon: resource.lon }) }}
           >
             <Tooltip>{resource.name}{resource.sample ? ' (sample)' : ''}</Tooltip>
           </CircleMarker>
         ))}
-        <CircleMarker center={[userLocation.lat, userLocation.lon]} radius={8} pathOptions={{ color: '#ffffff', weight: 3, fillColor: '#14212b', fillOpacity: 1 }}>
+        <CircleMarker center={[userLocation.lat, userLocation.lon]} radius={8} pathOptions={{ color: '#ffffff', weight: 3, fillColor: '#2f8fd8', fillOpacity: 1 }}>
           <Tooltip>You</Tooltip>
         </CircleMarker>
-        {selected && <CircleMarker center={[selected.lat, selected.lon]} radius={14} pathOptions={{ color: '#14212b', weight: 2, fill: false }} />}
+        {selected && <CircleMarker center={[selected.lat, selected.lon]} radius={14} pathOptions={{ color: '#8fd0ff', weight: 2, fill: false, dashArray: '4 4' }} />}
         <ClickToSelect onPick={onPick} />
       </MapContainer>
       <div className="snow-legend" role="img" aria-label="Storm total snowfall, from 1 inch (light blue) to 36 or more inches (dark purple)">
