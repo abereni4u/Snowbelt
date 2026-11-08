@@ -5,11 +5,11 @@ Free, no key, but NWS asks every app to send a User-Agent (set NWS_USER_AGENT in
 Docs: https://www.weather.gov/documentation/services-web-api
 
 What's here and working:
-  - fetchActiveAlerts(): active alerts for a point, trimmed for the UI, cached 5 minutes.
+  - fetchActiveAlerts(): active alerts for Western New York, trimmed for the UI, cached 5 minutes.
   - fetchSnowfallForecast(): the raw gridded snowfall forecast for one point, converted to inches.
 
 What Role 2 builds next:
-  - Sample ~60 points across the metro with fetchSnowfallForecast, cache for 30-60 min,
+  - Sample ~60 points across Western New York with fetchSnowfallForecast, cache for 30-60 min,
     and use those numbers in place of the sample model in snowModel.py.
 """
 import re
@@ -22,6 +22,10 @@ from app import settings
 
 NWS_BASE = "https://api.weather.gov"
 cacheStore = dict()
+
+# NWS Buffalo forecast zones for the eight Western New York counties
+# (Niagara, Orleans, Northern Erie, Southern Erie, Genesee, Wyoming, Chautauqua, Cattaraugus, Allegany)
+WNY_ZONES = ("NYZ001", "NYZ002", "NYZ010", "NYZ085", "NYZ011", "NYZ012", "NYZ019", "NYZ020", "NYZ021")
 
 
 def nwsGet(path: str) -> dict:
@@ -40,16 +44,22 @@ def readCache(key: str, maxAgeSeconds: int):
     return None
 
 
-def fetchActiveAlerts(lat: float = 42.886, lon: float = -78.878) -> list:
-    """Active NWS alerts covering a point (defaults to downtown Buffalo)."""
-    cacheKey = "alerts:%.2f,%.2f" % (lat, lon)
+def fetchActiveAlerts(zones: tuple = WNY_ZONES) -> list:
+    """Active NWS alerts for the given forecast zones (defaults to all of Western New York).
+    An alert issued for several counties at once is listed once."""
+    cacheKey = "alerts:" + ",".join(zones)
     cached = readCache(cacheKey, 300)
     if (cached is not None):
         return cached
-    data = nwsGet("/alerts/active?point=%.4f,%.4f" % (lat, lon))
+    data = nwsGet("/alerts/active?zone=" + ",".join(zones))
     alerts = list()
+    seen = set()
     for feature in data.get("features", list()):
         properties = feature.get("properties", dict())
+        alertKey = (properties.get("event", ""), properties.get("headline", ""))
+        if (alertKey in seen):
+            continue
+        seen.add(alertKey)
         alerts.append(dict(
             event=properties.get("event", ""),
             headline=properties.get("headline", ""),

@@ -20,13 +20,14 @@ from app.services import nws, places, routing, snowModel
 
 logger = logging.getLogger("snowbelt.gemini")
 
-SYSTEM_RULES = """You are Snowbelt's assistant for people in the Buffalo, New York area during lake-effect snow.
+SYSTEM_RULES = """You are Snowbelt's assistant for people in Western New York (Erie, Niagara, Orleans, Genesee, Wyoming, Chautauqua, Cattaraugus and Allegany counties) during lake-effect snow.
 
 Use the tools to look up real numbers before you answer anything about snow, roads, risk, alerts or places to go. Never guess a number.
 Lake-effect snow is very local: one town can get feet while the next gets nothing, so always name specific towns.
 Use inches, inches per hour, miles and minutes. Keep answers under 120 words, in plain text with no markdown.
 For driving questions, check the route with getRouteRisk and say plainly if it crosses high-risk snow. Never promise a road is safe.
 If someone is stuck, without heat, or needs help, call draftHelpRequest so the app can show them a help request to confirm, and tell them to review and send it in the app.
+If someone lists readiness items they still need, check conditions and findResources near them, then suggest concrete ways to get each item before the storm: going out before the snow gets heavy, grocery or pharmacy delivery while roads are open, nearby warming centers, and calling 2-1-1 for assistance programs. Never invent store names, addresses or phone numbers.
 If anyone's life may be in danger, tell them to call 911 first. This app does not dispatch emergency services.
 If the data source note says the numbers are sample data, mention that once."""
 
@@ -42,7 +43,7 @@ def buildTools(context: dict) -> list:
     hour = context["hoursAhead"]
 
     def lookupPlace(name: str) -> dict:
-        """Find the latitude and longitude of a town or campus in the Buffalo area, e.g. "Orchard Park" or "UB North Campus". Use name "me" for the user's own location."""
+        """Find the latitude and longitude of a town or campus in Western New York, e.g. "Orchard Park", "Jamestown" or "UB North Campus". Use name "me" for the user's own location."""
         if ((name.strip().lower() in ("me", "my location", "here")) and (context["userLat"] is not None)):
             return dict(name="your location", lat=context["userLat"], lon=context["userLon"])
         town = places.findTown(name)
@@ -85,7 +86,7 @@ def buildTools(context: dict) -> list:
         return places.nearbyResources(lat, lon, kind, 4)
 
     def getActiveAlerts() -> list:
-        """Active National Weather Service alerts for the Buffalo area (live data)."""
+        """Active National Weather Service alerts for Western New York (live data)."""
         try:
             return nws.fetchActiveAlerts()
         except Exception as error:

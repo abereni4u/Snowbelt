@@ -1,24 +1,64 @@
 # Snowbelt
 
-Lake-effect snow can bury one Buffalo neighborhood while the next one stays clear. Snowbelt shows where the snow is piling up, tells you whether your drive crosses it, and connects you with neighbors and emergency contacts when you're stuck. A Gemini assistant does the heavy lifting: it looks up conditions, checks routes, finds shelters and drafts help requests from plain-language questions.
+Lake-effect snow can bury one Buffalo neighborhood while the next one stays clear. Snowbelt shows where the snow is piling up across Western New York, tells you whether your drive crosses it, and connects you with neighbors and emergency contacts when you're stuck. A Gemini assistant does the heavy lifting: it looks up conditions, checks routes, finds shelters and drafts help requests from plain-language questions.
 
 Built at UB Hacking 2026 for the Gemini track.
 
 > **Deadlines (Sun Nov 8):** Devpost draft due at 12:00, final submission 12:30 PM. We create the Devpost draft by midnight tonight either way, so the "12" can't catch us out.
 
-## What's in the starter
+## What works now
 
 Everything runs today on **sample data**, and every outside service is optional: a missing key falls back to sample data or a dry run instead of crashing.
 
 | Piece | Status now | Next step |
 | --- | --- | --- |
-| Map with snowfall grid, help pins, Live/Future slider, 2022 replay | Works on a sample storm model | Wire live NWS data, port the prototype look |
+| Smooth snowfall map over all of Western NY, Live/Future slider, 2022 replay | Works on a sample storm model | Wire live NWS data |
+| Location search (town or county drives the whole page) | Works | — |
 | Area conditions + "Areas with high risk" list | Works | Dial gauges from `docs/ui-prototype.html` |
-| Gemini assistant with 7 tools | Works once `GEMINI_API_KEY` is set | Tune prompt, add tools, test 10 real questions |
-| Routes (fastest vs. safer) | Straight-line mock | Add `ORS_API_KEY` for real roads, draw routes on the map |
+| Gemini assistant with 7 tools | Works once `GEMINI_API_KEY` is set | Handle an overloaded model, test 10 real questions |
+| Storm readiness checklist (Have/Need, "Safe" status, "Ask Gemini how to get these") | Works, saved on the device only | Let emergency contacts see "Safe" |
+| Route panel: fastest vs. safer, drawn on the map | Straight-line mock without a working `ORS_API_KEY` | Fix the key, fall back to the mock when the call fails |
+| Nearest shelters & community centers | Works on sample listings, all show "Call ahead" | Verified listings with hours, which show "Open" |
 | Sign-in, emergency contacts, neighbor help board | Code done, needs a Firebase project | Create the project, publish the rules |
 | Email + SMS help alerts | Dry run (logs only) | Gmail app password, Twilio |
-| NWS alerts banner | Live (no key needed) | — |
+| NWS alerts banner | Live for all eight WNY counties (no key needed) | — |
+
+## Next steps
+
+Pull `main` before you start, then work on a `role<N>/<task>` branch as usual.
+
+**Before anything else (AJ):** merge `lead/wny-smooth-map`, then `lead/checklist-route-search`. Everyone else then switches to `main` and runs `git pull`.
+
+**If the assistant hangs:** `gemini-3.8-flash` is returning "503 high demand" right now. Set `GEMINI_MODEL=gemini-3.6-flash` in `backend/.env` and restart the backend. `gemini-3.5-flash` also works.
+
+**Role 1: Gemini assistant**
+- [ ] When Gemini returns 503 or times out, reply "Gemini is busy, try again in a minute" within about 15 seconds instead of hanging.
+- [ ] Mark a few checklist items as Need and press "Ask Gemini how to get these". Make sure the answer names real nearby resources and mentions 2-1-1, and never invents stores or phone numbers.
+- [ ] Write 10 test questions (drive, shelter, stuck, "wait or go now?") and fix bad answers.
+- [ ] Optional: a "compare to past storms" tool (2014 Snowvember, Dec 2022 blizzard).
+
+**Role 2: Weather data + routes**
+- [ ] openrouteservice rejects our key (403). Get a working key, or leave `ORS_API_KEY` blank for the straight-line mock.
+- [ ] In `routing.py`, fall back to the straight-line mock when the openrouteservice call fails, instead of returning a 502. The route panel currently shows an error.
+- [ ] Tune risk thresholds on the Dec 2022 replay so East Buffalo, Cheektowaga and Lackawanna light up the way they did.
+- [ ] Live NWS snowfall behind `USE_LIVE_NWS`, if time allows.
+- [ ] Deploy the backend.
+
+**Role 3: Frontend + map**
+- [ ] Check the new panels (search, readiness, routes, shelters) on desktop and phone widths, and fix the layout.
+- [ ] Optional, in this order: a "regions to avoid" map layer from the high-risk cells, a radar-style close-up around the searched place with mile rings, header nav.
+- [ ] Deploy the frontend.
+
+**Role 4: Community + alerts**
+- [ ] Replace sample listings in `resources.json` with verified shelters and warming centers. Each needs `hours` and a `source_url`, and drops `"sample": true`. Listings with "24/7" hours show a green "Open" badge.
+- [ ] "On my way, ETA 15 min" on help requests: add an ETA when someone claims a request, show it to everyone, and allow the new field in `firestore.rules`.
+- [ ] Create the Firebase project and publish the rules. Send real email alerts.
+- [ ] Optional: save the readiness "Safe" status to the profile so emergency contacts can see it.
+
+**Everyone**
+- [ ] Pick one name, Snowbelt or Cold Path, before the video and Devpost.
+- [ ] Rehearse the demo: replay Dec 2022 → search "East Buffalo" → fill the checklist → Gemini suggests how to get missing items → safer route to a shelter → post "no food" and someone claims it → ranked risk list → `/docs` as the open API.
+- [ ] Run `pytest` and `npm run build` before every push.
 
 `docs/ui-prototype.html` is the clickable design from the whiteboard sketch. Open it in a browser for the look we're aiming for.
 
@@ -58,7 +98,7 @@ Each role owns its own files, so we rarely edit the same file at the same time. 
 | --- | --- | --- | --- |
 | 1. Gemini assistant (track centerpiece) | | `backend/app/services/geminiAgent.py`, `backend/app/routers/chat.py`, `frontend/src/components/ChatPanel.tsx` | Get a key, confirm tool calls work, write 10 test questions and fix bad answers, add a "compare to past storms" tool |
 | 2. Weather data + routes | | `backend/app/services/snowModel.py`, `nws.py`, `routing.py`, `places.py`, `data/towns.json`, `routers/weather.py`, `routers/routing.py` | ORS key and real routes, live NWS snowfall behind `USE_LIVE_NWS`, tune risk thresholds on the replay, deploy backend |
-| 3. Frontend + map | | `frontend/src/App.tsx`, `MapView.tsx`, `TimeControl.tsx`, `AreaPanel.tsx`, `RiskList.tsx`, `styles.css` | Prototype look, gauges, draw fastest/safer routes on the map, phone layout, deploy frontend |
+| 3. Frontend + map | | `frontend/src/App.tsx`, `MapView.tsx`, `SnowLayer.tsx`, `TimeControl.tsx`, `AreaPanel.tsx`, `RiskList.tsx`, `LocationSearch.tsx`, `ReadinessPanel.tsx`, `RoutePanel.tsx`, `ShelterList.tsx`, `styles.css` | Prototype look, gauges, phone layout, deploy frontend |
 | 4. Community + accounts + alerts | | `frontend/src/firebase.ts`, `HelpPanel.tsx`, `firebase/firestore.rules`, `backend/app/services/notify.py`, `firebaseAuth.py`, `backend/app/routers/community.py`, `backend/app/data/resources.json` | Firebase project, email alerts, Twilio, replace sample pins with a verified shelter list |
 
 Everyone: Devpost write-up and demo. AJ cuts the demo video.
@@ -98,10 +138,10 @@ Example requests and responses for every endpoint are in `shared/contracts/`. If
 
 | Endpoint | Owner | What it returns |
 | --- | --- | --- |
-| `GET /api/risk?hours_ahead=0-24&mode=live\|replay` | 2 | GeoJSON grid of ~3 km cells with snow totals, rate and risk level |
+| `GET /api/risk?hours_ahead=0-24&mode=live\|replay` | 2 | Snow totals and rates on a ~3 km grid over Western New York, as number arrays (the map draws them as one smooth layer) |
 | `GET /api/conditions?lat&lon&hours_ahead&mode` | 2 | Conditions at one point |
 | `GET /api/areas?hours_ahead&mode` | 2 | Every town, worst first |
-| `GET /api/alerts` | 2 | Live NWS alerts for Buffalo |
+| `GET /api/alerts` | 2 | Live NWS alerts for all eight Western New York counties |
 | `POST /api/route` | 2 | Fastest and safer routes, each with a risk level |
 | `GET /api/resources?lat&lon&type` | 4 | Nearest warming centers, shelters, police and government sites |
 | `POST /api/help/notify` | 4 | Emails/texts the signed-in user's emergency contacts |
