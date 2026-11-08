@@ -1,5 +1,8 @@
-// "Areas with high risk" list (Role 3). Shows towns above low risk, worst first.
+// "Areas with high risk" list (Role 3). Shows towns above low risk, worst first (top few, then "Show all").
+import { useState } from 'react'
 import { LEVEL_LABEL, type AreaRow } from '../types'
+
+const SHOW_FIRST = 6
 
 interface Props {
   areas: AreaRow[]
@@ -8,7 +11,9 @@ interface Props {
 }
 
 export default function RiskList({ areas, hoursAhead, onPick }: Props) {
+  const [showAll, setShowAll] = useState(false)
   const atRisk = areas.filter((row) => row.level !== 'low')
+  const shown = showAll ? atRisk : atRisk.slice(0, SHOW_FIRST)
   return (
     <section className="card list-card">
       <div className="card-head row-between">
@@ -19,7 +24,7 @@ export default function RiskList({ areas, hoursAhead, onPick }: Props) {
         <p className="empty">No towns above low risk right now.</p>
       ) : (
         <ul className="rows">
-          {atRisk.map((row) => (
+          {shown.map((row) => (
             <li key={row.town}>
               <button className="row" onClick={() => onPick(row)}>
                 <span className="row-name">{row.town}</span>
@@ -29,6 +34,11 @@ export default function RiskList({ areas, hoursAhead, onPick }: Props) {
             </li>
           ))}
         </ul>
+      )}
+      {atRisk.length > SHOW_FIRST && (
+        <div className="list-more">
+          <button className="linkish" onClick={() => setShowAll(!showAll)}>{showAll ? 'Show fewer' : `Show all ${atRisk.length} towns`}</button>
+        </div>
       )}
     </section>
   )

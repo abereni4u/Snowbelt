@@ -1,8 +1,12 @@
 """
-Sample snow model (Role 2 owns this file)
------------------------------------------
-Stands in for real forecast data so every screen and the Gemini tools work before the
-NWS feed is wired in. All numbers it produces are SAMPLE data.
+Snow model (Role 2 owns this file)
+----------------------------------
+"live" mode uses the National Weather Service gridded snowfall forecast, sampled at every
+town in towns.json and blended between towns (inverse-distance weighting). If NWS can't be
+reached, or USE_LIVE_NWS is false, "live" falls back to a sample storm and says so through
+dataSource(). "replay" is always the illustrative Nov 2022 storm below.
+
+Sample storms:
 
 A lake-effect band is described by keyframes: how hard it snows at the core (inches per
 hour), the point the band is centered on, and the compass heading it points toward.
@@ -12,10 +16,16 @@ For any point and hour:
 
 Storm totals are that rate added up hour by hour from the storm's start.
 
-To go live, replace getRateInHr / getTotalIn with numbers from services/nws.py.
 Everything else (risk grid, routes, Gemini tools) calls only these functions.
 """
 import math
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
+
+from app import settings
+from app.services import nws, places
 
 KM_PER_DEG_LAT = 111.0
 KM_PER_DEG_LON = 111.32 * math.cos(math.radians(42.86))
@@ -54,6 +64,128 @@ def getScenario(mode: str) -> dict:
     return SCENARIOS["live"]
 
 
+# Live NWS field. Hours are counted from the start of the current UTC hour, from
+# LIVE_FIRST_HOUR (snow forecast for the last 12 hours) through hour 24 of the future slider.
+LIVE_FIRST_HOUR = -12
+LIVE_LAST_HOUR = 25
+LIVE_TTL_SECONDS = 1800
+LIVE_RETRY_SECONDS = 120
+LIVE_WIND_POINT = (42.886, -78.878)   # downtown Buffalo
+liveState = dict(savedAt=0.0, failedAt=0.0, field=None)
+liveLock = threading.Lock()
+
+
+def hourlyRates(periods: list, startOfHour: datetime) -> list:
+    """Spreads each NWS period's inches evenly over its hours: one in/hr value per hour slot."""
+    rates = [0.0] * (LIVE_LAST_HOUR - LIVE_FIRST_HOUR)
+    for period in periods:
+        if (period["hours"] <= 0):
+            continue
+        perHour = period["inches"] / period["hours"]
+        offset = (datetime.fromisoformat(period["start"]) - startOfHour).total_seconds() / 3600
+        for step in range(0, int(round(period["hours"]))):
+            index = int(math.floor(offset + step)) - LIVE_FIRST_HOUR
+            if ((index >= 0) and (index < len(rates))):
+                rates[index] += perHour
+    return rates
+
+
+def fetchTownRates(town: dict, startOfHour: datetime):
+    try:
+        return (town["lat"], town["lon"], hourlyRates(nws.fetchSnowfallForecast(town["lat"], town["lon"]), startOfHour))
+    except Exception:
+        return None
+
+
+def loadLiveField():
+    startOfHour = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(lambda town: fetchTownRates(town, startOfHour), places.townList))
+    points = list()
+    for result in results:
+        if (result is None):
+            continue
+        lat, lon, rates = result
+        totals = [0.0]
+        for rate in rates:
+            totals.append(totals[-1] + rate)
+        points.append(dict(lat=lat, lon=lon, rates=rates, totals=totals))
+    if (len(points) < 10):
+        return None
+    try:
+        wind = nws.fetchWindAt(LIVE_WIND_POINT[0], LIVE_WIND_POINT[1], startOfHour)
+    except Exception:
+        wind = dict(from_deg=0, mph=0)
+    return dict(points=points, startOfHour=startOfHour, wind=wind)
+
+
+def getLiveField():
+    """The live NWS field, refreshed every 30 minutes; None when live data is off or unavailable."""
+    if (settings.useLiveNws == False):
+        return None
+    with liveLock:
+        now = time.time()
+        if ((liveState["field"] is not None) and ((now - liveState["savedAt"]) < LIVE_TTL_SECONDS)):
+            return liveState["field"]
+        if ((now - liveState["failedAt"]) < LIVE_RETRY_SECONDS):
+            return liveState["field"]
+        field = loadLiveField()
+        if (field is None):
+            liveState["failedAt"] = now
+            return liveState["field"]
+        liveState["field"] = field
+        liveState["savedAt"] = now
+        return field
+
+
+def liveVersion(mode: str) -> float:
+    """Changes whenever the live field is refreshed, so cached map layers are rebuilt."""
+    if (mode != "live"):
+        return 0.0
+    getLiveField()
+    return liveState["savedAt"]
+
+
+def dataSource(mode: str) -> str:
+    """'nws' for live forecast data, 'replay' for the 2022 replay, 'sample' when live fell back."""
+    if (mode == "replay"):
+        return "replay"
+    if (getLiveField() is not None):
+        return "nws"
+    return "sample"
+
+
+def liveBlend(field: dict, lat: float, lon: float, read) -> float:
+    """Inverse-distance-weighted blend of a per-town value; read(point) picks the value."""
+    weightSum = 0.0
+    valueSum = 0.0
+    for point in field["points"]:
+        eastKm = (lon - point["lon"]) * KM_PER_DEG_LON
+        northKm = (lat - point["lat"]) * KM_PER_DEG_LAT
+        weight = 1.0 / (eastKm * eastKm + northKm * northKm + 1.0)
+        weightSum += weight
+        valueSum += weight * read(point)
+    return valueSum / weightSum
+
+
+def liveRate(field: dict, lat: float, lon: float, hour: float) -> float:
+    index = min(max(int(math.floor(hour)) - LIVE_FIRST_HOUR, 0), LIVE_LAST_HOUR - LIVE_FIRST_HOUR - 1)
+    return liveBlend(field, lat, lon, lambda point: point["rates"][index])
+
+
+def liveTotal(field: dict, lat: float, lon: float, hour: float) -> float:
+    position = min(max(hour - LIVE_FIRST_HOUR, 0.0), float(LIVE_LAST_HOUR - LIVE_FIRST_HOUR))
+    whole = int(math.floor(position))
+    fraction = position - whole
+
+    def read(point):
+        total = point["totals"][whole]
+        if (whole < len(point["rates"])):
+            total += point["rates"][whole] * fraction
+        return total
+    return liveBlend(field, lat, lon, read)
+
+
 def getBandFrame(mode: str, hour: float) -> dict:
     """Band state at any hour, blended linearly between the two nearest keyframes."""
     keyframes = getScenario(mode)["keyframes"]
@@ -77,6 +209,10 @@ def getBandFrame(mode: str, hour: float) -> dict:
 
 def getRateInHr(mode: str, lat: float, lon: float, hour: float) -> float:
     """Snowfall rate in inches per hour at a point and hour (0 = now, up to 24)."""
+    if (mode == "live"):
+        field = getLiveField()
+        if (field is not None):
+            return liveRate(field, lat, lon, hour)
     scenario = getScenario(mode)
     frame = getBandFrame(mode, hour)
     if (frame["peak"] <= 0):
@@ -92,7 +228,11 @@ def getRateInHr(mode: str, lat: float, lon: float, hour: float) -> float:
 
 
 def getTotalIn(mode: str, lat: float, lon: float, hour: float) -> float:
-    """Storm total in inches from the start of the storm up to the given hour."""
+    """Storm total in inches from the start of the storm (live: 12 hours ago) up to the given hour."""
+    if (mode == "live"):
+        field = getLiveField()
+        if (field is not None):
+            return liveTotal(field, lat, lon, hour)
     scenario = getScenario(mode)
     totalIn = 0.0
     step = scenario["startHour"]
@@ -132,6 +272,14 @@ def getConditions(mode: str, lat: float, lon: float, hour: float) -> dict:
 
 
 def getWind(mode: str, hour: float) -> dict:
+    field = getLiveField() if (mode == "live") else None
+    if (field is not None):
+        if (hour == 0):
+            return field["wind"]
+        try:
+            return nws.fetchWindAt(LIVE_WIND_POINT[0], LIVE_WIND_POINT[1], field["startOfHour"] + timedelta(hours=hour))
+        except Exception:
+            return field["wind"]
     frame = getBandFrame(mode, hour)
     fromDeg = (frame["heading"] + 180) % 360
     return dict(from_deg=round(fromDeg), mph=getScenario(mode)["windMph"])

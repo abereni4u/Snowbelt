@@ -109,8 +109,10 @@ def describeContext(context: dict) -> str:
     lines = list()
     if (context["mode"] == "replay"):
         lines.append("Data source: %s. These numbers are sample data." % snowModel.getScenario("replay")["label"])
+    elif (snowModel.dataSource("live") == "nws"):
+        lines.append("Data source: National Weather Service gridded snowfall forecast, blended between towns. Totals cover the last 12 hours plus the forecast ahead.")
     else:
-        lines.append("Data source: sample storm model until live NWS data is wired in. These numbers are sample data.")
+        lines.append("Data source: sample storm model, because live NWS data is unavailable right now. These numbers are sample data.")
     lines.append("The user is looking at the map %s." % ("now" if (context["hoursAhead"] == 0) else "%d hours ahead" % context["hoursAhead"]))
     if (context["userLat"] is not None):
         town = places.nearestTown(context["userLat"], context["userLon"])

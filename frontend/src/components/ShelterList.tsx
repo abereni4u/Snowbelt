@@ -11,7 +11,7 @@ const TYPE_LABEL: Record<Resource['type'], string> = {
   government: 'Community center',
 }
 
-function status(resource: Resource): { label: string; open: boolean } {
+export function status(resource: Resource): { label: string; open: boolean } {
   const hours = resource.hours.trim()
   if (/24\s*(\/\s*7|hours|hrs)/i.test(hours)) return { label: 'Open', open: true }
   if (hours) return { label: hours, open: false }
