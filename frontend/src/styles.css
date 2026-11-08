@@ -104,6 +104,11 @@ h3 { font: 700 13px/1.2 var(--f-display); margin: 0 0 8px; text-transform: upper
 .snow-legend-bar { display: block; height: 8px; border-radius: 4px; }
 .snow-legend-labels { display: flex; justify-content: space-between; margin-top: 3px; font: 600 10.5px/1.2 var(--f-data); color: var(--ink); }
 .snow-legend-unit { display: block; margin-top: 1px; font-size: 10.5px; color: var(--muted); }
+.resource-pin { background: none; border: 0; }
+.resource-pin .resource-pin-badge { width: 28px; height: 28px; border: 2px solid #0a1424; box-shadow: 0 1px 4px rgb(0 0 0 / 0.45); }
+.resource-pin-badge { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex: none; border-radius: 50%; box-sizing: border-box; }
+.pin-legend { position: absolute; right: 10px; top: 10px; z-index: 1000; display: grid; gap: 5px; margin: 0; padding: 8px 10px; list-style: none; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-size: 11.5px; color: var(--ink); pointer-events: none; }
+.pin-legend li { display: flex; align-items: center; gap: 7px; }
 .time-control { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 12px 16px 14px; }
 .seg { display: inline-flex; padding: 3px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-2); }
 .seg button { border: 0; background: none; padding: 8px 16px 7px; border-radius: 999px; font-weight: 700; font-size: 13px; cursor: pointer; color: var(--muted); }

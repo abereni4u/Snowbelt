@@ -1,6 +1,6 @@
 // Map (Role 3). OpenStreetMap tiles, the smooth snowfall layer from /api/risk, help pins, you, and the selected spot.
-import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMapEvents } from 'react-leaflet'
-import type { LatLngBoundsExpression } from 'leaflet'
+import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMapEvents } from 'react-leaflet'
+import { divIcon, type LatLngBoundsExpression } from 'leaflet'
 import type { Place, Resource, RiskGrid, RoutePlan } from '../types'
 import SnowLayer, { SNOW_STOPS } from './SnowLayer'
 
@@ -11,11 +11,50 @@ const LEGEND_STOPS = SNOW_STOPS.slice(1)
 const LEGEND_GRADIENT = `linear-gradient(to right, ${LEGEND_STOPS.map(([, [red, green, blue]]) => `rgb(${red} ${green} ${blue})`).join(', ')})`
 
 const PIN_COLOR: Record<Resource['type'], string> = {
-  warming_center: '#3fbf8f',
+  warming_center: '#f28c28',
   shelter: '#3fbf8f',
   police: '#5b8def',
-  government: '#5b8def',
+  government: '#ffffff',
 }
+
+// The white town-hall badge needs a dark glyph to stay readable
+const GLYPH_COLOR: Record<Resource['type'], string> = {
+  warming_center: '#ffffff',
+  shelter: '#ffffff',
+  police: '#ffffff',
+  government: '#0a1424',
+}
+
+// Inline SVG glyphs (24x24, white strokes) so each pin shows what kind of place it is
+const PIN_GLYPH: Record<Resource['type'], string> = {
+  warming_center: '<path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.2 1.2-3.6 2.3-4.8.3 1.6 1.2 2.6 2.2 2.8C11 8.5 11 6 12 3z"/>',
+  shelter: '<path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/><path d="M10.5 19v-5h3v5"/>',
+  police: '<path d="M12 3 5 6v5.5c0 4.2 2.9 7.6 7 9.5 4.1-1.9 7-5.3 7-9.5V6z"/><path d="m12 8.5 1.1 2.2 2.4.3-1.75 1.7.4 2.4L12 14l-2.15 1.1.4-2.4-1.75-1.7 2.4-.3z"/>',
+  government: '<path d="M4 9.5 12 5l8 4.5"/><path d="M4 20h16"/><path d="M6.5 11v7M10 11v7M14 11v7M17.5 11v7"/>',
+}
+
+const PIN_LABEL: Record<Resource['type'], string> = {
+  warming_center: 'Warming center',
+  shelter: 'Shelter',
+  police: 'Police station',
+  government: 'Government / town hall',
+}
+
+const glyphSvg = (type: Resource['type'], size: number) =>
+  `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="${GLYPH_COLOR[type]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${PIN_GLYPH[type]}</svg>`
+
+const PIN_ICON = Object.fromEntries(
+  (Object.keys(PIN_GLYPH) as Resource['type'][]).map((type) => [
+    type,
+    divIcon({
+      className: 'resource-pin',
+      html: `<span class="resource-pin-badge" style="background:${PIN_COLOR[type]}">${glyphSvg(type, 16)}</span>`,
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+      tooltipAnchor: [0, -14],
+    }),
+  ]),
+) as Record<Resource['type'], ReturnType<typeof divIcon>>
 
 const toLatLng = (points: [number, number][]): [number, number][] => points.map(([lon, lat]) => [lat, lon])
 
@@ -63,15 +102,15 @@ export default function MapView({ grid, resources, userLocation, selected, route
           </>
         )}
         {resources.map((resource) => (
-          <CircleMarker
+          <Marker
             key={resource.id}
-            center={[resource.lat, resource.lon]}
-            radius={7}
-            pathOptions={{ color: '#0a1424', weight: 2, fillColor: PIN_COLOR[resource.type], fillOpacity: 1 }}
+            position={[resource.lat, resource.lon]}
+            icon={PIN_ICON[resource.type]}
+            title={PIN_LABEL[resource.type]}
             eventHandlers={{ click: () => onPick({ name: resource.name, lat: resource.lat, lon: resource.lon }) }}
           >
             <Tooltip>{resource.name}{resource.sample ? ' (sample)' : ''}</Tooltip>
-          </CircleMarker>
+          </Marker>
         ))}
         <CircleMarker center={[userLocation.lat, userLocation.lon]} radius={8} pathOptions={{ color: '#ffffff', weight: 3, fillColor: '#2f8fd8', fillOpacity: 1 }}>
           <Tooltip>You</Tooltip>
@@ -88,6 +127,14 @@ export default function MapView({ grid, resources, userLocation, selected, route
         </span>
         <span className="snow-legend-unit">inches of snow</span>
       </div>
+      <ul className="pin-legend" aria-label="Map pin types">
+        {(Object.keys(PIN_GLYPH) as Resource['type'][]).map((type) => (
+          <li key={type}>
+            <span className="resource-pin-badge" style={{ background: PIN_COLOR[type] }} dangerouslySetInnerHTML={{ __html: glyphSvg(type, 13) }} />
+            {PIN_LABEL[type]}
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
