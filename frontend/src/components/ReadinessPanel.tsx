@@ -3,22 +3,36 @@
 // grounded in the same tools as the chat (nearby resources, conditions, alerts).
 // Answers are saved on this device, and on the person's profile when they're signed in. Once
 // everything is Have, they can send their emergency contacts an "I'm safe" message.
+// Items still needed can go to the neighbor board as one supplies request for volunteers to pick up,
+// and the volunteer hub puts volunteers whose skills fit those items first.
 import { useEffect, useRef, useState } from 'react'
 import type { User } from 'firebase/auth'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { addDoc, collection, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore'
 import { api } from '../api'
-import { db } from '../firebase'
+import { db, firebaseReady } from '../firebase'
 import type { Contact, NotifyResult, Place } from '../types'
 
+// skills: the volunteer hub skills that can cover the item (same names as SKILLS in VolunteerHub)
 const ITEMS = [
-  { key: 'food', label: 'Food & water (3 days)' },
-  { key: 'meds', label: 'Medications' },
-  { key: 'light', label: 'Flashlights & batteries' },
-  { key: 'warm', label: 'Blankets & warm layers' },
-  { key: 'heat', label: 'Backup heat source' },
-  { key: 'phone', label: 'Phone charged + power bank' },
-  { key: 'transport', label: 'Transportation plan' },
+  { key: 'food', label: 'Food & water (3 days)', skills: ['Groceries & pharmacy runs'] },
+  { key: 'meds', label: 'Medications', skills: ['Groceries & pharmacy runs'] },
+  { key: 'light', label: 'Flashlights & batteries', skills: ['Groceries & pharmacy runs'] },
+  { key: 'warm', label: 'Blankets & warm layers', skills: ['Groceries & pharmacy runs'] },
+  { key: 'heat', label: 'Backup heat source', skills: ['Generator'] },
+  { key: 'phone', label: 'Phone charged + power bank', skills: ['Generator'] },
+  { key: 'transport', label: 'Transportation plan', skills: ['Rides to shelters', '4x4 / AWD vehicle'] },
 ]
+export { ITEMS as READINESS_ITEMS }
+
+interface SupplyRequest {
+  id: string
+  status: 'open' | 'claimed' | 'resolved'
+  items?: string[]
+  claimedByName?: string
+  etaMinutes?: number
+}
+
+const roundToKm = (value: number) => Math.round(value * 100) / 100
 
 type Answer = 'have' | 'need'
 const STORAGE_KEY = 'snowbelt.checklist'
@@ -35,13 +49,17 @@ interface Props {
   place: Place
   user: User | null
   onAsk: (question: string) => void
+  onNeedsChange: (keys: string[]) => void
 }
 
-export default function ReadinessPanel({ place, user, onAsk }: Props) {
+export default function ReadinessPanel({ place, user, onAsk, onNeedsChange }: Props) {
   const [answers, setAnswers] = useState<Record<string, Answer>>(loadAnswers)
   const [sending, setSending] = useState(false)
   const [sentNote, setSentNote] = useState('')
   const loadedFor = useRef<string | null>(null)
+  const [request, setRequest] = useState<SupplyRequest | null>(null)
+  const [posting, setPosting] = useState(false)
+  const [requestError, setRequestError] = useState('')
 
   // Signing in brings back the checklist saved on the profile (answers on this device win)
   useEffect(() => {
@@ -69,6 +87,29 @@ export default function ReadinessPanel({ place, user, onAsk }: Props) {
   const haveCount = ITEMS.filter((item) => answers[item.key] === 'have').length
   const needed = ITEMS.filter((item) => answers[item.key] === 'need')
   const safe = haveCount === ITEMS.length
+  const neededKeys = needed.map((item) => item.key).join(',')
+
+  useEffect(() => {
+    onNeedsChange(neededKeys ? neededKeys.split(',') : [])
+  }, [neededKeys, onNeedsChange])
+
+  // The supplies request this checklist posted, if it's still open or claimed (updates live)
+  useEffect(() => {
+    if (!db || !user) {
+      setRequest(null)
+      return
+    }
+    const mine = query(collection(db, 'helpRequests'), where('uid', '==', user.uid), where('source', '==', 'readiness'))
+    return onSnapshot(mine, (snapshot) => {
+      const active = snapshot.docs
+        .map((item) => ({ id: item.id, ...(item.data() as Omit<SupplyRequest, 'id'>) }))
+        .find((item) => item.status !== 'resolved')
+      setRequest(active ?? null)
+    }, () => setRequest(null))
+  }, [user])
+
+  const neededLabels = needed.map((item) => item.label)
+  const requestOutdated = request?.status === 'open' && (request.items ?? []).join('|') !== neededLabels.join('|')
 
   function mark(key: string, answer: Answer) {
     setAnswers((current) => ({ ...current, [key]: answer }))
@@ -99,6 +140,38 @@ export default function ReadinessPanel({ place, user, onAsk }: Props) {
       setSending(false)
     }
   }
+
+  async function requestSupplies() {
+    if (!db || !user) return
+    setPosting(true)
+    setRequestError('')
+    const note = `Getting ready for the storm. Still need: ${neededLabels.join(', ').toLowerCase()}.`
+    try {
+      if (request?.status === 'open') {
+        await updateDoc(doc(db, 'helpRequests', request.id), { items: neededLabels, note })
+      } else {
+        await addDoc(collection(db, 'helpRequests'), {
+          uid: user.uid,
+          name: user.displayName ?? 'A neighbor',
+          kind: 'supplies',
+          note,
+          items: neededLabels,
+          source: 'readiness',
+          priority: 4, // same as "supplies" in HelpPanel
+          approxLat: roundToKm(place.lat),
+          approxLon: roundToKm(place.lon),
+          status: 'open',
+          createdAt: serverTimestamp(),
+        })
+      }
+    } catch (caught) {
+      setRequestError(caught instanceof Error ? caught.message : 'Could not post the request. Try again.')
+    } finally {
+      setPosting(false)
+    }
+  }
+
+  const scrollToCommunity = () => document.getElementById('community')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   function askGemini() {
     const list = needed.map((item) => item.label.toLowerCase()).join(', ')
@@ -140,7 +213,32 @@ export default function ReadinessPanel({ place, user, onAsk }: Props) {
       )}
       {needed.length > 0 && (
         <div className="ready-foot">
-          <button className="btn primary" onClick={askGemini}>Ask Gemini how to get {needed.length === 1 ? 'it' : `these ${needed.length}`}</button>
+          <div className="community-actions">
+            {user && !request && (
+              <button className="btn primary" onClick={requestSupplies} disabled={posting}>
+                {posting ? 'Posting…' : `Ask a volunteer to bring ${needed.length === 1 ? 'it' : 'these'}`}
+              </button>
+            )}
+            {requestOutdated && (
+              <button className="btn primary" onClick={requestSupplies} disabled={posting}>{posting ? 'Updating…' : 'Update my request'}</button>
+            )}
+            <button className={user && !request ? 'btn' : 'btn primary'} onClick={askGemini}>Ask Gemini how to get {needed.length === 1 ? 'it' : `these ${needed.length}`}</button>
+          </div>
+          {!user && firebaseReady && <p className="small muted">Sign in to ask a volunteer to bring what you need.</p>}
+          {user && !request && <p className="small muted">Posts to the neighbor board for volunteers. Not for emergencies: if anyone's life may be in danger, <a href="tel:911">call 911</a> first.</p>}
+          {requestError && <p className="small">{requestError}</p>}
+        </div>
+      )}
+      {request && (
+        <div className="ready-foot">
+          <p className="small">
+            {request.status === 'claimed' ? (
+              <><span className="chip open">On the way</span> {request.claimedByName ?? 'A volunteer'} is bringing your supplies{request.etaMinutes != null ? ` (said about ${request.etaMinutes} min)` : ''}.</>
+            ) : (
+              <><span className="chip med">Waiting</span> Your supplies request is on the neighbor board: {(request.items ?? []).join(', ').toLowerCase()}.</>
+            )}{' '}
+            <button className="linkish" onClick={scrollToCommunity}>{request.status === 'claimed' ? 'Rate them when they arrive' : 'See or cancel it'}</button>
+          </p>
         </div>
       )}
     </section>

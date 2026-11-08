@@ -2,11 +2,13 @@
 // their rating comes only from people they helped (ratings/{requestId}, written when a request is
 // resolved). Reports go to reports/ for the team to review in the Firebase console.
 // There is no ID check yet, so nothing here says "verified".
+// Volunteers whose skills cover what the person's readiness checklist still needs are listed first.
 import { useEffect, useState } from 'react'
 import type { User } from 'firebase/auth'
 import { addDoc, collection, deleteDoc, doc, limit, onSnapshot, query, serverTimestamp, setDoc, type Timestamp } from 'firebase/firestore'
 import { db, firebaseReady, signInWithGoogle } from '../firebase'
 import type { Place } from '../types'
+import { READINESS_ITEMS } from './ReadinessPanel'
 
 const SKILLS = ['4x4 / AWD vehicle', 'Snowblower', 'Shoveling', 'Groceries & pharmacy runs', 'Welfare checks', 'Rides to shelters', 'Generator']
 const REPORT_REASONS = ['Did not show up', 'Unsafe or rude', 'Asked for money', 'Fake profile']
@@ -37,9 +39,10 @@ function milesBetween(a: Place, latB: number, lonB: number) {
 interface Props {
   user: User | null
   userLocation: Place
+  needs: string[]
 }
 
-export default function VolunteerHub({ user, userLocation }: Props) {
+export default function VolunteerHub({ user, userLocation, needs }: Props) {
   const [volunteers, setVolunteers] = useState<Volunteer[]>([])
   const [ratings, setRatings] = useState<Rating[]>([])
   const [editing, setEditing] = useState(false)
@@ -71,7 +74,11 @@ export default function VolunteerHub({ user, userLocation }: Props) {
   const head = (
     <div className="card-head">
       <h2>Volunteer hub</h2>
-      <p className="sub">Neighbors who can help, best rated first. Ratings come only from people they helped.</p>
+      <p className="sub">
+        {needs.length > 0
+          ? 'Neighbors who can help with what your readiness list still needs come first. Ratings come only from people they helped.'
+          : 'Neighbors who can help, best rated first. Ratings come only from people they helped.'}
+      </p>
     </div>
   )
 
@@ -93,13 +100,15 @@ export default function VolunteerHub({ user, userLocation }: Props) {
     )
   }
 
+  const neededItems = READINESS_ITEMS.filter((item) => needs.includes(item.key))
   const scored = volunteers.map((person) => {
     const theirs = ratings.filter((item) => item.helperUid === person.uid)
     const average = theirs.length > 0 ? theirs.reduce((sum, item) => sum + item.stars, 0) / theirs.length : null
-    return { ...person, average, count: theirs.length, miles: milesBetween(userLocation, person.approxLat, person.approxLon) }
+    const covers = person.uid === user.uid ? [] : neededItems.filter((item) => item.skills.some((skill) => person.skills.includes(skill)))
+    return { ...person, average, covers, count: theirs.length, miles: milesBetween(userLocation, person.approxLat, person.approxLon) }
   })
-  // Rated volunteers first (best average), then unrated ones by distance
-  scored.sort((a, b) => (b.average ?? -1) - (a.average ?? -1) || a.miles - b.miles)
+  // Volunteers who cover the most of your needs first, then best rated, then nearest
+  scored.sort((a, b) => b.covers.length - a.covers.length || (b.average ?? -1) - (a.average ?? -1) || a.miles - b.miles)
 
   async function save() {
     if (!db || !user) return
@@ -144,6 +153,11 @@ export default function VolunteerHub({ user, userLocation }: Props) {
                   <span className="chip open">★ {person.average.toFixed(1)} · {person.count} {person.count === 1 ? 'rating' : 'ratings'}</span>
                 ) : (
                   <span className="chip unknown">New</span>
+                )}
+                {person.covers.length > 0 && (
+                  <span className="chip open" title={`Can help with: ${person.covers.map((item) => item.label).join(', ')}`}>
+                    Matches your list ({person.covers.length})
+                  </span>
                 )}
                 <span className="row-meta">
                   {person.miles.toFixed(1)} mi{person.skills.length > 0 && ` · ${person.skills.join(', ')}`}
