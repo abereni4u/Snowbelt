@@ -56,7 +56,7 @@ export default function ReadinessPanel({ place, onAsk }: Props) {
   }
 
   return (
-    <section className="card ready-card">
+    <section className="card ready-card" id="readiness">
       <div className="card-head">
         <div className="row-between">
           <h2>Storm readiness</h2>
@@ -78,6 +78,7 @@ export default function ReadinessPanel({ place, onAsk }: Props) {
           </li>
         ))}
       </ul>
+      {safe && <p className="ready-foot small">Marked Safe. Your emergency contacts (Mom, Sam) can see it. <span className="muted">(Demo)</span></p>}
       {needed.length > 0 && (
         <div className="ready-foot">
           <button className="btn primary" onClick={askGemini}>Ask Gemini how to get {needed.length === 1 ? 'it' : `these ${needed.length}`}</button>
