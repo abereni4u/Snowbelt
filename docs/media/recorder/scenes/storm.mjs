@@ -1,0 +1,21 @@
+import { connect } from '../lib.mjs'
+const page = await connect()
+await page.open('http://localhost:5173/')
+await page.scrollTo('#map', 76)
+const crop = await page.rect('.map-card')
+const map = await page.rect('.map')
+const stop = await page.record(process.env.FRAMES + '/storm', crop)
+await page.moveTo(map.x + 560, map.y + 330, 10)
+await page.wait(900)
+await page.clickOn('.time-control .check input', 900)
+await page.wait(1600)
+await page.moveTo(map.x + 300, map.y + 232, 800)
+for (let i = 0; i < 2; i++) { await page.wheel(map.x + 300, map.y + 232, -100); await page.wait(700) }
+await page.wait(900)
+await page.clickOn('.time-control .seg button:nth-child(2)', 800)
+await page.wait(900)
+await page.clickOn('.future .btn.round', 700)
+await page.wait(7800)
+for (const [dx, dy] of [[340, 210], [400, 240], [300, 180], [455, 275]]) { await page.moveTo(map.x + dx, map.y + dy, 700); await page.wait(900) }
+console.log('frames', await stop(2500))
+page.close()

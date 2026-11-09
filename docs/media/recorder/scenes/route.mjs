@@ -1,0 +1,21 @@
+import { connect } from '../lib.mjs'
+const page = await connect()
+await page.open('http://localhost:5173/', 1280, 1060)
+await page.evaluate(`document.querySelector('.time-control .check input').click()`)
+await page.wait(2500)
+await page.scrollTo('#map', 76)
+const top = await page.rect('.map-card')
+const crop = { x: top.x, y: top.y, width: top.width, height: 885 }
+const stop = await page.record(process.env.FRAMES + '/route', crop)
+await page.moveTo(top.x + 300, top.y + 300, 10)
+await page.wait(800)
+await page.clickOn('#route-dest', 900)
+await page.wait(500)
+await page.setValue('#route-dest', 't:Dunkirk')
+for (let i = 0; i < 40; i++) { await page.wait(500); if (await page.evaluate(`!!document.querySelector('.route-options')`)) break }
+await page.wait(1200)
+const map = await page.rect('.map')
+await page.moveTo(map.x + 260, map.y + 330, 1000)
+await page.wait(1800)
+console.log('frames', await stop(3500))
+page.close()
